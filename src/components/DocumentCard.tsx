@@ -1,6 +1,7 @@
+import { Ionicons } from '@expo/vector-icons';
 import { format } from 'date-fns';
 import React from 'react';
-import { ActivityIndicator, Image, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { Document } from '../services/database';
 
 interface Props {
@@ -24,6 +25,19 @@ export const DocumentCard: React.FC<Props> = ({ doc, selected, onPress, onLongPr
         return dateStr;
     };
 
+    const getIcon = (type: string) => {
+        switch (type) {
+            case 'Flight': return { name: 'airplane', color: '#007AFF' };
+            case 'Hotel': return { name: 'bed', color: '#FF9500' };
+            case 'Receipt': return { name: 'receipt', color: '#34C759' };
+            case 'PDF': return { name: 'document', color: '#FF3B30' };
+            case 'Image': return { name: 'image', color: '#5856D6' };
+            default: return { name: 'document-text', color: '#8E8E93' };
+        }
+    };
+
+    const icon = getIcon(doc.type);
+
     return (
         <TouchableOpacity
             style={[styles.card, selected && styles.selectedCard]}
@@ -31,7 +45,9 @@ export const DocumentCard: React.FC<Props> = ({ doc, selected, onPress, onLongPr
             onLongPress={onLongPress}
             activeOpacity={0.7}
         >
-            <Image source={{ uri: doc.uri }} style={styles.image} />
+            <View style={[styles.iconContainer, { backgroundColor: icon.color + '15' }]}>
+                <Ionicons name={icon.name as any} size={32} color={icon.color} />
+            </View>
             <View style={styles.info}>
                 <Text style={styles.title}>{doc.title}</Text>
                 {doc.owner && (
@@ -73,11 +89,12 @@ const styles = StyleSheet.create({
         borderColor: '#007AFF',
         backgroundColor: '#F0F8FF',
     },
-    image: {
+    iconContainer: {
         width: 60,
         height: 60,
-        borderRadius: 8,
-        backgroundColor: '#eee',
+        borderRadius: 12,
+        justifyContent: 'center',
+        alignItems: 'center',
     },
     info: {
         marginLeft: 12,
@@ -121,5 +138,12 @@ const styles = StyleSheet.create({
         color: '#fff',
         fontWeight: 'bold',
         fontSize: 14,
+    },
+    processingOverlay: {
+        ...StyleSheet.absoluteFillObject,
+        backgroundColor: 'rgba(255,255,255,0.6)',
+        justifyContent: 'center',
+        alignItems: 'center',
+        borderRadius: 12,
     },
 });

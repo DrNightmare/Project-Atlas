@@ -1,178 +1,141 @@
 # Project Atlas - AI-Powered Travel Document Manager
 
-A local-first React Native mobile app for managing travel documents with AI-powered parsing using Google Gemini.
+A React Native mobile application built with Expo that stores travel documents locally and extracts metadata using the Google Gemini 2.0 Flash API.
 
 ## Features
-
-- 📄 **Document Upload**: Support for images and PDFs
-- 🤖 **AI Parsing**: Automatic extraction of title, date, type, and owner using Google Gemini 2.0 Flash
-- 💾 **Local Storage**: All documents stored locally using SQLite and Expo FileSystem
-- 🔍 **Full-Screen Viewer**: Zoomable and pannable image viewer
-- 🗑️ **Multi-Select Delete**: Long-press to select and delete multiple documents
-- 🔄 **Reprocess**: Re-run AI parsing on existing documents
-- 👤 **Owner Tracking**: Automatically extracts passenger/guest names
-- ⏰ **Smart Date Display**: Context-aware date/time formatting based on document type
+- Document upload supporting images and PDFs.
+- Automatic AI parsing of title, date, type, and owner.
+- Local storage using SQLite and Expo FileSystem.
+- Full‑screen document viewer with pinch‑to‑zoom and pan.
+- Multi‑select delete and reprocess capabilities.
+- Owner extraction and context‑aware date display.
 
 ## Tech Stack
-
 - **Framework**: React Native with Expo
-- **Navigation**: Expo Router (file-based routing)
-- **Database**: SQLite (expo-sqlite)
+- **Navigation**: Expo Router (file‑based routing)
+- **Database**: SQLite via expo-sqlite
 - **File Storage**: Expo FileSystem
 - **AI**: Google Gemini 2.0 Flash API
-- **Gestures**: React Native Gesture Handler & Reanimated
+- **Gestures**: react-native-gesture-handler & react-native-reanimated
 - **Date Formatting**: date-fns
 
 ## Prerequisites
-
 - Node.js (v16 or higher)
 - npm or yarn
-- Expo CLI
-- Google Gemini API Key ([Get one here](https://aistudio.google.com/app/apikey))
+- Expo CLI (`npm install -g expo-cli`)
+- Google Gemini API key (see https://aistudio.google.com/app/apikey)
 
 ## Setup
-
-1. **Clone the repository**
+1. Clone the repository
    ```bash
-   git clone <your-repo-url>
+   git clone <repository-url>
    cd "Project Atlas"
    ```
-
-2. **Install dependencies**
+2. Install dependencies
    ```bash
    npm install
    ```
-
-3. **Configure API Key**
-   
-   Create a `.env` file in the project root:
+3. Create a `.env` file in the project root with your API key
    ```bash
    EXPO_PUBLIC_GEMINI_API_KEY=your_api_key_here
    ```
-   
-   > ⚠️ **Important**: Never commit your `.env` file. It's already added to `.gitignore`.
-
-4. **Start the development server**
+4. Start the development server
    ```bash
    npx expo start
    ```
-
-5. **Run on device/emulator**
-   - Press `a` for Android emulator
-   - Press `i` for iOS simulator
-   - Scan QR code with Expo Go app on your phone
+5. Run on a device or emulator (press `a` for Android, `i` for iOS, or scan the QR code with Expo Go).
 
 ## Project Structure
-
 ```
 Project Atlas/
-├── app/                          # Expo Router pages
+├── app/                     # Expo Router pages
 │   ├── (tabs)/
-│   │   └── index.tsx            # Main timeline screen
-│   └── document-view.tsx        # Full-screen document viewer
+│   │   └── index.tsx       # Main timeline screen
+│   └── document-view.tsx   # Full‑screen viewer
 ├── src/
 │   ├── components/
-│   │   └── DocumentCard.tsx     # Timeline card component
+│   │   └── DocumentCard.tsx
 │   └── services/
-│       ├── database.ts          # SQLite operations
-│       ├── fileStorage.ts       # File system operations
-│       └── geminiParser.ts      # AI parsing logic
-└── .env                         # API keys (not committed)
+│       ├── database.ts    # SQLite operations
+│       ├── fileStorage.ts # File system utilities
+│       └── geminiParser.ts# AI parsing logic
+└── .env                    # API keys (ignored by git)
 ```
 
 ## Usage
-
 ### Adding Documents
-1. Tap the **Add** button in the top right
-2. Select an image or PDF from your device
-3. Wait for AI to analyze and extract metadata
-4. Document appears in the timeline
+1. Tap the **Add** button in the header.
+2. Select an image or PDF.
+3. The file is saved locally and a placeholder entry appears immediately.
+4. AI parsing runs in the background; the entry updates when metadata is available.
 
 ### Viewing Documents
-- **Tap** a document card to view full-screen
-- **Pinch** to zoom
-- **Pan** to move around when zoomed
-- **Double-tap** to zoom 2x or reset
+- Tap a document card to open the full‑screen viewer.
+- Pinch to zoom and drag to pan.
+- Double‑tap toggles zoom level.
 
 ### Managing Documents
-- **Long-press** to enter selection mode
-- **Tap** multiple documents to select
-- **Delete**: Remove selected documents
-- **Reprocess**: Re-run AI parsing on selected documents
+- Long‑press a card to enter selection mode.
+- Tap additional cards to select multiple items.
+- Use **Delete** to remove selected documents.
+- Use **Reprocess** to run AI parsing again on selected documents.
 
 ## Database Schema
-
 ```sql
-CREATE TABLE documents (
+CREATE TABLE IF NOT EXISTS documents (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
-  uri TEXT NOT NULL,           -- Local file path
-  title TEXT NOT NULL,         -- AI-extracted title
-  docDate TEXT NOT NULL,       -- ISO 8601 date/time
-  type TEXT NOT NULL,          -- Flight, Hotel, Receipt, Other
-  owner TEXT,                  -- Passenger/guest name
-  createdAt TEXT NOT NULL      -- Upload timestamp
+  uri TEXT NOT NULL,
+  title TEXT NOT NULL,
+  docDate TEXT NOT NULL,
+  type TEXT NOT NULL,
+  owner TEXT,
+  createdAt TEXT NOT NULL,
+  processing INTEGER DEFAULT 0
 );
 ```
+`processing` is `0` for idle and `1` while parsing is in progress.
 
 ## AI Parsing
-
-The app uses Google Gemini 2.0 Flash to extract:
-- **Title**: Descriptive title (e.g., "Flight to Mumbai")
-- **Date**: Event date/time in ISO 8601 format
-- **Type**: Document category (Flight, Hotel, Receipt, Other)
-- **Owner**: Person's name (passenger, guest, customer)
+The Gemini API extracts:
+- **Title** – descriptive document title.
+- **Date** – event date/time in ISO‑8601 format.
+- **Type** – category such as Flight, Hotel, Receipt, or Other.
+- **Owner** – passenger or guest name.
 
 ## Environment Variables
-
 | Variable | Description | Required |
 |----------|-------------|----------|
 | `EXPO_PUBLIC_GEMINI_API_KEY` | Google Gemini API key | Yes |
 
 ## Development
-
-### Running Tests
+### Testing
 ```bash
 npm test
 ```
-
 ### Building for Production
 ```bash
 # Android
 npx expo build:android
-
 # iOS
 npx expo build:ios
 ```
 
 ## Troubleshooting
-
-### "GEMINI_API_KEY is not set" error
-- Ensure `.env` file exists in project root
-- Verify `EXPO_PUBLIC_GEMINI_API_KEY` is set correctly
-- Restart the Expo dev server
-
-### Database migration errors
-- The app automatically migrates the database schema
-- If issues persist, clear app data and reinstall
-
-### Image not loading
-- Ensure file permissions are granted
-- Check that the file path is valid
+- **API key not set**: Verify `.env` contains `EXPO_PUBLIC_GEMINI_API_KEY` and restart the dev server.
+- **Database migration errors**: The app performs migrations automatically; if problems persist, clear app data and reinstall.
+- **Image not loading**: Ensure file permissions are granted and the file path is valid.
 
 ## Contributing
-
-1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
+1. Fork the repository.
+2. Create a feature branch (`git checkout -b feature/your-feature`).
+3. Commit changes (`git commit -m "Add feature"`).
+4. Push the branch (`git push origin feature/your-feature`).
+5. Open a Pull Request.
 
 ## License
-
 This project is licensed under the MIT License.
 
 ## Acknowledgments
-
-- [Expo](https://expo.dev) for the amazing framework
-- [Google Gemini](https://ai.google.dev) for AI capabilities
-- [React Native](https://reactnative.dev) community
+- Expo for the development framework.
+- Google Gemini for AI capabilities.
+- The React Native community.

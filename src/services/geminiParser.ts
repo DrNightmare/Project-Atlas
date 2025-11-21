@@ -8,6 +8,21 @@ export interface ParsedData {
     owner?: string;
 }
 
+const safeParseDate = (dateStr: any): string => {
+    if (!dateStr) return new Date().toISOString();
+    try {
+        const date = new Date(dateStr);
+        if (isNaN(date.getTime())) {
+            console.warn('Invalid date from Gemini:', dateStr);
+            return new Date().toISOString();
+        }
+        return date.toISOString();
+    } catch (e) {
+        console.warn('Date parsing error:', e);
+        return new Date().toISOString();
+    }
+};
+
 export const parseDocumentWithGemini = async (uri: string): Promise<ParsedData[]> => {
     try {
         // 0. Get API key from secure storage
@@ -73,7 +88,7 @@ export const parseDocumentWithGemini = async (uri: string): Promise<ParsedData[]
 
         return items.map((docData: any) => ({
             title: docData.title || 'Untitled Document',
-            date: docData.date ? new Date(docData.date).toISOString() : new Date().toISOString(),
+            date: safeParseDate(docData.date),
             type: docData.type || 'Other',
             owner: docData.owner || undefined,
         }));

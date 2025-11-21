@@ -56,7 +56,7 @@ export const addDocument = (
 };
 
 export const getDocuments = (): Document[] => {
-  return db.getAllSync<Document>('SELECT * FROM documents ORDER BY docDate DESC');
+  return db.getAllSync<Document>('SELECT * FROM documents ORDER BY docDate ASC');
 };
 
 export const deleteDocument = (id: number) => {

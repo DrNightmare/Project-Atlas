@@ -8,15 +8,21 @@ export interface ParsedData {
     owner?: string;
 }
 
+// Custom error for missing API key
+export class ApiKeyMissingError extends Error {
+    constructor(message: string = 'API key not found. Please configure your Gemini API key in Settings.') {
+        super(message);
+        this.name = 'ApiKeyMissingError';
+    }
+}
+
+// Test the API key by listing models (lighter weight than generating content)
 export const testApiKey = async (apiKey: string): Promise<boolean> => {
     try {
-        const GEMINI_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
+        const GEMINI_URL = `https://generativelanguage.googleapis.com/v1beta/models?key=${apiKey}`;
         const response = await fetch(GEMINI_URL, {
-            method: 'POST',
+            method: 'GET',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                contents: [{ parts: [{ text: "Hello" }] }]
-            })
         });
         return response.ok;
     } catch (error) {
@@ -45,7 +51,7 @@ export const parseDocumentWithGemini = async (uri: string): Promise<ParsedData[]
         // 0. Get API key from secure storage
         const apiKey = await getApiKey();
         if (!apiKey) {
-            throw new Error('API key not found. Please configure your Gemini API key in Settings.');
+            throw new ApiKeyMissingError();
         }
 
         const GEMINI_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
@@ -110,7 +116,13 @@ export const parseDocumentWithGemini = async (uri: string): Promise<ParsedData[]
 
     } catch (error) {
         console.error('Parsing Error:', error);
-        // Fallback to mock data or error
+
+        // Re-throw ApiKeyMissingError so the UI can handle it
+        if (error instanceof ApiKeyMissingError) {
+            throw error;
+        }
+
+        // Fallback to mock data for other errors
         return [{
             title: 'Scanned Document (Error)',
             date: new Date().toISOString(),

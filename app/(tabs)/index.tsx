@@ -8,7 +8,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { DocumentCard } from '../../src/components/DocumentCard';
 import { addDocument, deleteDocument, Document, getDocuments, initDatabase, updateDocument } from '../../src/services/database';
 import { deleteFile, initFileStorage, saveFile } from '../../src/services/fileStorage';
-import { parseDocumentWithGemini } from '../../src/services/geminiParser';
+import { ApiKeyMissingError, parseDocumentWithGemini } from '../../src/services/geminiParser';
 import { theme } from '../../src/theme';
 
 const showToast = (msg: string) => {
@@ -149,6 +149,21 @@ export default function TimelineScreen() {
           // Mark as not processing even on failure
           updateDocument(docId, placeholderTitle, placeholderDate, placeholderType, '', 0);
           loadDocuments();
+
+          // Check if error is about missing API key
+          if (e instanceof ApiKeyMissingError) {
+            Alert.alert(
+              'API Key Required',
+              'Please configure your Gemini API key in Settings to enable document parsing.',
+              [
+                { text: 'Cancel', style: 'cancel' },
+                {
+                  text: 'Go to Settings',
+                  onPress: () => router.push('/settings')
+                }
+              ]
+            );
+          }
         });
     } catch (error) {
       console.error(error);
@@ -249,6 +264,23 @@ export default function TimelineScreen() {
           console.error(`Failed to reprocess doc ${doc.id}`, e);
           // Reset processing flag on error
           updateDocument(doc.id, doc.title, doc.docDate, doc.type, doc.owner, 0);
+
+          // Check if error is about missing API key
+          if (e instanceof ApiKeyMissingError) {
+            Alert.alert(
+              'API Key Required',
+              'Please configure your Gemini API key in Settings to enable document parsing.',
+              [
+                { text: 'Cancel', style: 'cancel' },
+                {
+                  text: 'Go to Settings',
+                  onPress: () => router.push('/settings')
+                }
+              ]
+            );
+            // Break out of the loop since all will fail without API key
+            break;
+          }
         }
       }
 

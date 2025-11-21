@@ -1,50 +1,178 @@
-# Welcome to your Expo app 👋
+# Project Atlas - AI-Powered Travel Document Manager
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+A local-first React Native mobile app for managing travel documents with AI-powered parsing using Google Gemini.
 
-## Get started
+## Features
 
-1. Install dependencies
+- 📄 **Document Upload**: Support for images and PDFs
+- 🤖 **AI Parsing**: Automatic extraction of title, date, type, and owner using Google Gemini 2.0 Flash
+- 💾 **Local Storage**: All documents stored locally using SQLite and Expo FileSystem
+- 🔍 **Full-Screen Viewer**: Zoomable and pannable image viewer
+- 🗑️ **Multi-Select Delete**: Long-press to select and delete multiple documents
+- 🔄 **Reprocess**: Re-run AI parsing on existing documents
+- 👤 **Owner Tracking**: Automatically extracts passenger/guest names
+- ⏰ **Smart Date Display**: Context-aware date/time formatting based on document type
 
+## Tech Stack
+
+- **Framework**: React Native with Expo
+- **Navigation**: Expo Router (file-based routing)
+- **Database**: SQLite (expo-sqlite)
+- **File Storage**: Expo FileSystem
+- **AI**: Google Gemini 2.0 Flash API
+- **Gestures**: React Native Gesture Handler & Reanimated
+- **Date Formatting**: date-fns
+
+## Prerequisites
+
+- Node.js (v16 or higher)
+- npm or yarn
+- Expo CLI
+- Google Gemini API Key ([Get one here](https://aistudio.google.com/app/apikey))
+
+## Setup
+
+1. **Clone the repository**
+   ```bash
+   git clone <your-repo-url>
+   cd "Project Atlas"
+   ```
+
+2. **Install dependencies**
    ```bash
    npm install
    ```
 
-2. Start the app
+3. **Configure API Key**
+   
+   Create a `.env` file in the project root:
+   ```bash
+   EXPO_PUBLIC_GEMINI_API_KEY=your_api_key_here
+   ```
+   
+   > ⚠️ **Important**: Never commit your `.env` file. It's already added to `.gitignore`.
 
+4. **Start the development server**
    ```bash
    npx expo start
    ```
 
-In the output, you'll find options to open the app in a
+5. **Run on device/emulator**
+   - Press `a` for Android emulator
+   - Press `i` for iOS simulator
+   - Scan QR code with Expo Go app on your phone
 
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
+## Project Structure
 
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
-
-## Get a fresh project
-
-When you're ready, run:
-
-```bash
-npm run reset-project
+```
+Project Atlas/
+├── app/                          # Expo Router pages
+│   ├── (tabs)/
+│   │   └── index.tsx            # Main timeline screen
+│   └── document-view.tsx        # Full-screen document viewer
+├── src/
+│   ├── components/
+│   │   └── DocumentCard.tsx     # Timeline card component
+│   └── services/
+│       ├── database.ts          # SQLite operations
+│       ├── fileStorage.ts       # File system operations
+│       └── geminiParser.ts      # AI parsing logic
+└── .env                         # API keys (not committed)
 ```
 
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
+## Usage
 
-## Learn more
+### Adding Documents
+1. Tap the **Add** button in the top right
+2. Select an image or PDF from your device
+3. Wait for AI to analyze and extract metadata
+4. Document appears in the timeline
 
-To learn more about developing your project with Expo, look at the following resources:
+### Viewing Documents
+- **Tap** a document card to view full-screen
+- **Pinch** to zoom
+- **Pan** to move around when zoomed
+- **Double-tap** to zoom 2x or reset
 
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
+### Managing Documents
+- **Long-press** to enter selection mode
+- **Tap** multiple documents to select
+- **Delete**: Remove selected documents
+- **Reprocess**: Re-run AI parsing on selected documents
 
-## Join the community
+## Database Schema
 
-Join our community of developers creating universal apps.
+```sql
+CREATE TABLE documents (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  uri TEXT NOT NULL,           -- Local file path
+  title TEXT NOT NULL,         -- AI-extracted title
+  docDate TEXT NOT NULL,       -- ISO 8601 date/time
+  type TEXT NOT NULL,          -- Flight, Hotel, Receipt, Other
+  owner TEXT,                  -- Passenger/guest name
+  createdAt TEXT NOT NULL      -- Upload timestamp
+);
+```
 
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+## AI Parsing
+
+The app uses Google Gemini 2.0 Flash to extract:
+- **Title**: Descriptive title (e.g., "Flight to Mumbai")
+- **Date**: Event date/time in ISO 8601 format
+- **Type**: Document category (Flight, Hotel, Receipt, Other)
+- **Owner**: Person's name (passenger, guest, customer)
+
+## Environment Variables
+
+| Variable | Description | Required |
+|----------|-------------|----------|
+| `EXPO_PUBLIC_GEMINI_API_KEY` | Google Gemini API key | Yes |
+
+## Development
+
+### Running Tests
+```bash
+npm test
+```
+
+### Building for Production
+```bash
+# Android
+npx expo build:android
+
+# iOS
+npx expo build:ios
+```
+
+## Troubleshooting
+
+### "GEMINI_API_KEY is not set" error
+- Ensure `.env` file exists in project root
+- Verify `EXPO_PUBLIC_GEMINI_API_KEY` is set correctly
+- Restart the Expo dev server
+
+### Database migration errors
+- The app automatically migrates the database schema
+- If issues persist, clear app data and reinstall
+
+### Image not loading
+- Ensure file permissions are granted
+- Check that the file path is valid
+
+## Contributing
+
+1. Fork the repository
+2. Create a feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'Add amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
+
+## License
+
+This project is licensed under the MIT License.
+
+## Acknowledgments
+
+- [Expo](https://expo.dev) for the amazing framework
+- [Google Gemini](https://ai.google.dev) for AI capabilities
+- [React Native](https://reactnative.dev) community

@@ -26,7 +26,14 @@ export default function SettingsScreen() {
     const loadKey = async () => {
         try {
             const key = await getApiKey();
-            if (key) setApiKey(key);
+            if (key) {
+                setApiKey(key);
+            } else if (process.env.EXPO_PUBLIC_GEMINI_API_KEY) {
+                // Pre-populate and save from environment variable if no stored key
+                const envKey = process.env.EXPO_PUBLIC_GEMINI_API_KEY;
+                setApiKey(envKey);
+                await saveApiKey(envKey);
+            }
         } catch (e) {
             console.error('Failed to load key', e);
         } finally {

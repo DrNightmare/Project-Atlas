@@ -1,13 +1,16 @@
-import { useRouter } from 'expo-router';
+import { Ionicons } from '@expo/vector-icons';
+import { Stack, useRouter } from 'expo-router';
 import React, { useState } from 'react';
-import { Alert, Linking, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, Alert, Linking, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { saveApiKey } from '../src/services/apiKeyStorage';
+import { theme } from '../src/theme';
 
 export default function OnboardingScreen() {
     const router = useRouter();
     const [apiKey, setApiKey] = useState(process.env.EXPO_PUBLIC_GEMINI_API_KEY || '');
     const [loading, setLoading] = useState(false);
+    const [isVisible, setIsVisible] = useState(false);
 
     const handleGetStarted = async () => {
         if (!apiKey.trim()) {
@@ -32,57 +35,91 @@ export default function OnboardingScreen() {
 
     return (
         <SafeAreaView style={styles.container}>
-            <ScrollView contentContainerStyle={styles.content}>
-                <Text style={styles.emoji}>✈️</Text>
-                <Text style={styles.title}>Welcome to Project Atlas</Text>
-                <Text style={styles.subtitle}>
-                    Your AI-powered travel document manager
-                </Text>
-
-                <View style={styles.features}>
-                    <Text style={styles.featureItem}>📄 Upload travel documents</Text>
-                    <Text style={styles.featureItem}>🤖 AI extracts details automatically</Text>
-                    <Text style={styles.featureItem}>💾 Everything stored locally</Text>
-                    <Text style={styles.featureItem}>🔒 Your data stays on your device</Text>
+            <Stack.Screen options={{ headerShown: false }} />
+            <View style={styles.content}>
+                {/* Header */}
+                <View style={styles.header}>
+                    <Text style={styles.title}>Project Atlas</Text>
+                    <Text style={styles.subtitle}>AI-Powered Travel Document Manager</Text>
                 </View>
 
-                <View style={styles.setupSection}>
-                    <Text style={styles.sectionTitle}>Setup Required</Text>
+                {/* Features */}
+                <View style={styles.card}>
+                    <Text style={styles.cardTitle}>What You Can Do</Text>
+                    <View style={styles.featureList}>
+                        <View style={styles.featureItem}>
+                            <Ionicons name="document-text-outline" size={20} color={theme.colors.primary} />
+                            <Text style={styles.featureText}>Upload travel documents</Text>
+                        </View>
+                        <View style={styles.featureItem}>
+                            <Ionicons name="sparkles-outline" size={20} color={theme.colors.primary} />
+                            <Text style={styles.featureText}>AI extracts details automatically</Text>
+                        </View>
+                        <View style={styles.featureItem}>
+                            <Ionicons name="phone-portrait-outline" size={20} color={theme.colors.primary} />
+                            <Text style={styles.featureText}>Everything stored locally</Text>
+                        </View>
+                        <View style={styles.featureItem}>
+                            <Ionicons name="lock-closed-outline" size={20} color={theme.colors.primary} />
+                            <Text style={styles.featureText}>Your data stays on your device</Text>
+                        </View>
+                    </View>
+                </View>
+
+                {/* Setup */}
+                <View style={styles.card}>
+                    <Text style={styles.cardTitle}>Setup Required</Text>
                     <Text style={styles.description}>
                         This app uses Google Gemini AI to analyze your documents. You'll need a free API key to get started.
                     </Text>
 
                     <TouchableOpacity style={styles.linkButton} onPress={openGeminiStudio}>
-                        <Text style={styles.linkButtonText}>Get Free API Key →</Text>
+                        <Text style={styles.linkButtonText}>Get Free API Key</Text>
+                        <Ionicons name="arrow-forward" size={16} color="#fff" />
                     </TouchableOpacity>
 
-                    <Text style={styles.inputLabel}>Paste your API key below:</Text>
-                    <TextInput
-                        style={styles.input}
-                        placeholder="AIza..."
-                        value={apiKey}
-                        onChangeText={setApiKey}
-                        autoCapitalize="none"
-                        autoCorrect={false}
-                        multiline
-                        numberOfLines={2}
-                    />
+                    <Text style={styles.inputLabel}>API Key</Text>
+                    <View style={styles.inputContainer}>
+                        <TextInput
+                            style={styles.input}
+                            placeholder="Enter your API key"
+                            placeholderTextColor={theme.colors.textSecondary}
+                            value={apiKey}
+                            onChangeText={setApiKey}
+                            autoCapitalize="none"
+                            autoCorrect={false}
+                            secureTextEntry={!isVisible}
+                        />
+                        <TouchableOpacity onPress={() => setIsVisible(!isVisible)} style={styles.eyeIcon}>
+                            <Ionicons
+                                name={isVisible ? "eye-off-outline" : "eye-outline"}
+                                size={20}
+                                color={theme.colors.textSecondary}
+                            />
+                        </TouchableOpacity>
+                    </View>
 
                     <TouchableOpacity
                         style={[styles.button, loading && styles.buttonDisabled]}
                         onPress={handleGetStarted}
                         disabled={loading}
                     >
-                        <Text style={styles.buttonText}>
-                            {loading ? 'Saving...' : 'Get Started'}
-                        </Text>
+                        {loading ? (
+                            <ActivityIndicator color="#fff" size="small" />
+                        ) : (
+                            <Text style={styles.buttonText}>Get Started</Text>
+                        )}
                     </TouchableOpacity>
                 </View>
 
-                <Text style={styles.privacy}>
-                    🔐 Your API key is stored securely on your device and never shared.
-                </Text>
-            </ScrollView>
+                {/* Privacy Notice */}
+                <View style={styles.privacyNotice}>
+                    <Ionicons name="shield-checkmark-outline" size={16} color={theme.colors.textSecondary} />
+                    <Text style={styles.privacyText}>
+                        Your API key is stored securely on your device and never shared
+                    </Text>
+                </View>
+            </View>
         </SafeAreaView>
     );
 }
@@ -90,69 +127,67 @@ export default function OnboardingScreen() {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: '#f5f5f5',
+        backgroundColor: theme.colors.background,
     },
     content: {
-        padding: 24,
-        alignItems: 'center',
+        flex: 1,
+        padding: theme.spacing.l,
+        justifyContent: 'center',
     },
-    emoji: {
-        fontSize: 64,
-        marginTop: 20,
-        marginBottom: 16,
+    header: {
+        alignItems: 'center',
+        marginBottom: theme.spacing.xl,
     },
     title: {
-        fontSize: 28,
-        fontWeight: 'bold',
-        color: '#333',
-        marginBottom: 8,
-        textAlign: 'center',
+        ...theme.typography.h1,
+        marginTop: theme.spacing.m,
+        marginBottom: theme.spacing.xs,
     },
     subtitle: {
-        fontSize: 16,
-        color: '#666',
-        marginBottom: 32,
+        ...theme.typography.body,
+        color: theme.colors.textSecondary,
         textAlign: 'center',
     },
-    features: {
-        width: '100%',
-        backgroundColor: '#fff',
-        borderRadius: 12,
-        padding: 20,
-        marginBottom: 32,
+    card: {
+        backgroundColor: theme.colors.card,
+        borderRadius: theme.borderRadius.l,
+        padding: theme.spacing.l,
+        marginBottom: theme.spacing.m,
+        ...theme.shadows.card,
+    },
+    cardTitle: {
+        ...theme.typography.h2,
+        marginBottom: theme.spacing.m,
+    },
+    featureList: {
+        gap: theme.spacing.m,
     },
     featureItem: {
-        fontSize: 15,
-        color: '#333',
-        marginBottom: 12,
-        lineHeight: 22,
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: theme.spacing.s,
     },
-    setupSection: {
-        width: '100%',
-        backgroundColor: '#fff',
-        borderRadius: 12,
-        padding: 20,
-        marginBottom: 16,
-    },
-    sectionTitle: {
-        fontSize: 20,
-        fontWeight: '600',
-        color: '#333',
-        marginBottom: 12,
+    featureText: {
+        ...theme.typography.body,
+        flex: 1,
     },
     description: {
-        fontSize: 14,
-        color: '#666',
-        marginBottom: 16,
-        lineHeight: 20,
+        ...theme.typography.body,
+        color: theme.colors.textSecondary,
+        marginBottom: theme.spacing.l,
+        lineHeight: 22,
     },
     linkButton: {
-        backgroundColor: '#007AFF',
-        paddingVertical: 12,
-        paddingHorizontal: 20,
-        borderRadius: 8,
-        marginBottom: 24,
+        backgroundColor: theme.colors.primary,
+        flexDirection: 'row',
         alignItems: 'center',
+        justifyContent: 'center',
+        gap: theme.spacing.xs,
+        paddingVertical: theme.spacing.m,
+        paddingHorizontal: theme.spacing.l,
+        borderRadius: theme.borderRadius.m,
+        marginBottom: theme.spacing.l,
+        ...theme.shadows.card,
     },
     linkButtonText: {
         color: '#fff',
@@ -160,39 +195,57 @@ const styles = StyleSheet.create({
         fontWeight: '600',
     },
     inputLabel: {
-        fontSize: 14,
-        fontWeight: '500',
-        color: '#333',
-        marginBottom: 8,
+        ...theme.typography.body,
+        fontWeight: '600',
+        marginBottom: theme.spacing.xs,
+    },
+    inputContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        borderWidth: 1,
+        borderColor: theme.colors.border,
+        borderRadius: theme.borderRadius.m,
+        backgroundColor: theme.colors.background,
+        marginBottom: theme.spacing.m,
     },
     input: {
-        backgroundColor: '#f9f9f9',
-        borderWidth: 1,
-        borderColor: '#ddd',
-        borderRadius: 8,
-        padding: 12,
-        fontSize: 14,
-        marginBottom: 16,
-        minHeight: 60,
+        flex: 1,
+        padding: theme.spacing.m,
+        fontSize: 16,
+        color: theme.colors.text,
+    },
+    eyeIcon: {
+        padding: theme.spacing.m,
     },
     button: {
-        backgroundColor: '#34C759',
-        paddingVertical: 16,
-        borderRadius: 8,
+        backgroundColor: theme.colors.success,
+        paddingVertical: theme.spacing.m,
+        borderRadius: theme.borderRadius.m,
         alignItems: 'center',
+        justifyContent: 'center',
+        minHeight: 48,
+        ...theme.shadows.card,
     },
     buttonDisabled: {
-        backgroundColor: '#999',
+        backgroundColor: theme.colors.textSecondary,
+        opacity: 0.6,
     },
     buttonText: {
         color: '#fff',
         fontSize: 16,
         fontWeight: '600',
     },
-    privacy: {
-        fontSize: 12,
-        color: '#999',
+    privacyNotice: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: theme.spacing.xs,
+        paddingHorizontal: theme.spacing.l,
+    },
+    privacyText: {
+        ...theme.typography.small,
+        color: theme.colors.textSecondary,
         textAlign: 'center',
-        marginTop: 8,
+        flex: 1,
     },
 });

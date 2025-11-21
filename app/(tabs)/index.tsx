@@ -70,7 +70,7 @@ export default function TimelineScreen() {
       const savedUri = await saveFile(asset.uri);
 
       // Insert placeholder with processing flag
-      const placeholderTitle = asset.fileName || 'Untitled';
+      const placeholderTitle = asset.name || 'Untitled';
       const placeholderDate = new Date().toISOString();
       const placeholderType = asset.mimeType?.includes('pdf') ? 'PDF' : 'Image';
       const docId = addDocument(
@@ -86,15 +86,34 @@ export default function TimelineScreen() {
 
       // Parse in background
       parseDocumentWithGemini(savedUri)
-        .then((parsedData) => {
+        .then((parsedDataArray) => {
+          // 1. Update the original placeholder with the first result
+          const firstItem = parsedDataArray[0];
           updateDocument(
             docId,
-            parsedData.title,
-            parsedData.date,
-            parsedData.type,
-            parsedData.owner,
+            firstItem.title,
+            firstItem.date,
+            firstItem.type,
+            firstItem.owner,
             0
           );
+
+          // 2. If multiple items found, create new entries for the rest
+          if (parsedDataArray.length > 1) {
+            for (let i = 1; i < parsedDataArray.length; i++) {
+              const item = parsedDataArray[i];
+              addDocument(
+                savedUri, // Share the same file URI
+                item.title,
+                item.date,
+                item.type,
+                item.owner,
+                0 // Not processing
+              );
+            }
+            showToast(`Found ${parsedDataArray.length} items`);
+          }
+
           loadDocuments();
         })
         .catch((e) => {
@@ -169,15 +188,34 @@ export default function TimelineScreen() {
         try {
           // Mark as processing
           updateDocument(doc.id, doc.title, doc.docDate, doc.type, doc.owner, 1);
-          const parsedData = await parseDocumentWithGemini(doc.uri);
+          const parsedDataArray = await parseDocumentWithGemini(doc.uri);
+
+          // 1. Update the original doc with the first result
+          const firstItem = parsedDataArray[0];
           updateDocument(
             doc.id,
-            parsedData.title,
-            parsedData.date,
-            parsedData.type,
-            parsedData.owner,
+            firstItem.title,
+            firstItem.date,
+            firstItem.type,
+            firstItem.owner,
             0
           );
+
+          // 2. If multiple items found, create new entries for the rest
+          if (parsedDataArray.length > 1) {
+            for (let i = 1; i < parsedDataArray.length; i++) {
+              const item = parsedDataArray[i];
+              addDocument(
+                doc.uri, // Share the same file URI
+                item.title,
+                item.date,
+                item.type,
+                item.owner,
+                0
+              );
+            }
+          }
+
           successCount++;
         } catch (e) {
           console.error(`Failed to reprocess doc ${doc.id}`, e);

@@ -1,6 +1,9 @@
 import * as ExpoFileSystem from 'expo-file-system/legacy';
 
-const GEMINI_API_KEY = 'AIzaSyAtG98EaM6svIUMoC2e26yTaCcPksxncx8'; // TODO: Replace with actual key
+const GEMINI_API_KEY = process.env.EXPO_PUBLIC_GEMINI_API_KEY;
+if (!GEMINI_API_KEY) {
+    throw new Error('GEMINI_API_KEY is not set. Please add EXPO_PUBLIC_GEMINI_API_KEY to your .env file');
+}
 const GEMINI_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_API_KEY}`;
 
 export interface ParsedData {

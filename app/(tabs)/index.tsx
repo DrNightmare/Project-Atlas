@@ -1,7 +1,8 @@
+import { isBefore, startOfDay } from 'date-fns';
 import * as DocumentPicker from 'expo-document-picker';
 import { useFocusEffect, useRouter } from 'expo-router';
 import React, { useCallback, useEffect, useState } from 'react';
-import { ActivityIndicator, Alert, FlatList, Platform, StyleSheet, Text, ToastAndroid, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, Alert, Platform, SectionList, StyleSheet, Text, ToastAndroid, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { DocumentCard } from '../../src/components/DocumentCard';
 import { addDocument, deleteDocument, Document, getDocuments, initDatabase, updateDocument } from '../../src/services/database';
@@ -16,9 +17,15 @@ const showToast = (msg: string) => {
   }
 };
 
+interface Section {
+  title: string;
+  data: Document[];
+}
+
 export default function TimelineScreen() {
   const router = useRouter();
-  const [documents, setDocuments] = useState<Document[]>([]);
+  const [sections, setSections] = useState<Section[]>([]);
+  const [allDocuments, setAllDocuments] = useState<Document[]>([]); // Keep track for selection logic
   const [loading, setLoading] = useState(false);
   const [processing, setProcessing] = useState(false); // for add/reprocess button state
   const [selectionMode, setSelectionMode] = useState(false);
@@ -39,7 +46,26 @@ export default function TimelineScreen() {
     setLoading(true);
     try {
       const docs = getDocuments();
-      setDocuments(docs);
+      setAllDocuments(docs);
+
+      const today = startOfDay(new Date());
+
+      const upcoming = docs.filter(d => !isBefore(new Date(d.docDate), today));
+      const past = docs.filter(d => isBefore(new Date(d.docDate), today));
+
+      // Sort Upcoming: ASC (Nearest first) - already sorted by DB query
+      // Sort Past: DESC (Newest first) - need to reverse
+      const pastSorted = [...past].reverse();
+
+      const newSections: Section[] = [];
+      if (upcoming.length > 0) {
+        newSections.push({ title: 'Upcoming', data: upcoming });
+      }
+      if (pastSorted.length > 0) {
+        newSections.push({ title: 'Past', data: pastSorted });
+      }
+
+      setSections(newSections);
     } catch (e) {
       console.error('Failed to load documents', e);
     } finally {
@@ -162,7 +188,7 @@ export default function TimelineScreen() {
         style: 'destructive',
         onPress: async () => {
           try {
-            const docsToDelete = documents.filter((d) => selectedIds.has(d.id));
+            const docsToDelete = allDocuments.filter((d) => selectedIds.has(d.id));
             for (const doc of docsToDelete) {
               await deleteFile(doc.uri);
               deleteDocument(doc.id);
@@ -181,7 +207,7 @@ export default function TimelineScreen() {
   const handleReprocess = async () => {
     setProcessing(true);
     try {
-      const docsToReprocess = documents.filter((d) => selectedIds.has(d.id));
+      const docsToReprocess = allDocuments.filter((d) => selectedIds.has(d.id));
       let successCount = 0;
 
       for (const doc of docsToReprocess) {
@@ -270,8 +296,8 @@ export default function TimelineScreen() {
       {loading ? (
         <ActivityIndicator size="large" color="#007AFF" style={styles.loader} />
       ) : (
-        <FlatList
-          data={documents}
+        <SectionList
+          sections={sections}
           keyExtractor={(item) => item.id.toString()}
           renderItem={({ item }) => (
             <DocumentCard
@@ -282,8 +308,14 @@ export default function TimelineScreen() {
               onLongPress={() => handleLongPress(item.id)}
             />
           )}
+          renderSectionHeader={({ section: { title } }) => (
+            <View style={styles.sectionHeader}>
+              <Text style={styles.sectionHeaderText}>{title}</Text>
+            </View>
+          )}
           contentContainerStyle={styles.list}
           ListEmptyComponent={<Text style={styles.emptyText}>No documents yet. Tap 'Add' to start.</Text>}
+          stickySectionHeadersEnabled={false}
         />
       )}
     </SafeAreaView>
@@ -347,5 +379,17 @@ const styles = StyleSheet.create({
     marginTop: 50,
     color: '#999',
     fontSize: 16,
+  },
+  sectionHeader: {
+    backgroundColor: '#f5f5f5',
+    paddingVertical: 8,
+    marginBottom: 8,
+  },
+  sectionHeaderText: {
+    fontSize: 14,
+    fontWeight: 'bold',
+    color: '#666',
+    textTransform: 'uppercase',
+    letterSpacing: 1,
   },
 });

@@ -1,27 +1,31 @@
+import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
-import { Alert, Linking, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, Alert, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { deleteApiKey, getApiKey, saveApiKey } from '../src/services/apiKeyStorage';
+import { testApiKey } from '../src/services/geminiParser';
+import { theme } from '../src/theme';
 
 export default function SettingsScreen() {
     const router = useRouter();
     const [apiKey, setApiKey] = useState('');
-    const [loading, setLoading] = useState(false);
-    const [hasKey, setHasKey] = useState(false);
+    const [loading, setLoading] = useState(true);
+    const [testing, setTesting] = useState(false);
+    const [isVisible, setIsVisible] = useState(false);
 
     useEffect(() => {
-        loadApiKey();
+        loadKey();
     }, []);
 
-    const loadApiKey = async () => {
-        const key = await getApiKey();
-        if (key) {
-            setApiKey(key);
-            setHasKey(true);
-        } else if (process.env.EXPO_PUBLIC_GEMINI_API_KEY) {
-            // Use .env key as placeholder if no stored key
-            setApiKey(process.env.EXPO_PUBLIC_GEMINI_API_KEY);
+    const loadKey = async () => {
+        try {
+            const key = await getApiKey();
+            if (key) setApiKey(key);
+        } catch (e) {
+            console.error('Failed to load key', e);
+        } finally {
+            setLoading(false);
         }
     };
 
@@ -30,139 +34,117 @@ export default function SettingsScreen() {
             Alert.alert('Error', 'Please enter an API key');
             return;
         }
-
-        setLoading(true);
         try {
             await saveApiKey(apiKey.trim());
-            setHasKey(true);
-            Alert.alert('Success', 'API key saved successfully');
-        } catch (error) {
+            Alert.alert('Success', 'API Key saved successfully');
+        } catch (e) {
             Alert.alert('Error', 'Failed to save API key');
-        } finally {
-            setLoading(false);
         }
     };
 
     const handleTest = async () => {
-        if (!apiKey.trim()) {
-            Alert.alert('Error', 'Please enter an API key first');
-            return;
-        }
-
-        setLoading(true);
+        if (!apiKey.trim()) return;
+        setTesting(true);
         try {
-            const testUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey.trim()}`;
-            const response = await fetch(testUrl, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    contents: [{ parts: [{ text: 'Hello' }] }]
-                }),
-            });
-
-            if (response.ok) {
-                Alert.alert('Success', 'API key is valid! ✓');
+            const success = await testApiKey(apiKey.trim());
+            if (success) {
+                Alert.alert('Success', 'API Key is valid and working!');
             } else {
-                const data = await response.json();
-                Alert.alert('Error', data.error?.message || 'Invalid API key');
+                Alert.alert('Error', 'API Key validation failed. Please check the key.');
             }
-        } catch (error) {
-            Alert.alert('Error', 'Failed to test API key. Check your internet connection.');
+        } catch (e) {
+            Alert.alert('Error', 'Failed to test API key');
         } finally {
-            setLoading(false);
+            setTesting(false);
         }
     };
 
-    const handleDelete = () => {
-        Alert.alert(
-            'Delete API Key',
-            'Are you sure? You\'ll need to enter it again to use the app.',
-            [
-                { text: 'Cancel', style: 'cancel' },
-                {
-                    text: 'Delete',
-                    style: 'destructive',
-                    onPress: async () => {
+    const handleClear = async () => {
+        Alert.alert('Clear API Key', 'Are you sure? You will need to enter it again to use the app.', [
+            { text: 'Cancel', style: 'cancel' },
+            {
+                text: 'Clear',
+                style: 'destructive',
+                onPress: async () => {
+                    try {
                         await deleteApiKey();
                         setApiKey('');
-                        setHasKey(false);
-                        Alert.alert('Deleted', 'API key removed');
+                        Alert.alert('Cleared', 'API Key has been removed.', [
+                            {
+                                text: 'Go to Onboarding',
+                                onPress: () => router.replace('/onboarding')
+                            },
+                            { text: 'OK' }
+                        ]);
+                    } catch (e) {
+                        Alert.alert('Error', 'Failed to clear API key');
                     }
                 }
-            ]
-        );
-    };
-
-    const openGeminiStudio = () => {
-        Linking.openURL('https://aistudio.google.com/app/apikey');
+            }
+        ]);
     };
 
     return (
         <SafeAreaView style={styles.container}>
-            <ScrollView contentContainerStyle={styles.content}>
-                <Text style={styles.title}>Settings</Text>
+            <View style={styles.header}>
+                <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+                    <Ionicons name="arrow-back" size={24} color={theme.colors.text} />
+                </TouchableOpacity>
+                <Text style={styles.headerTitle}>Settings</Text>
+                <View style={{ width: 24 }} />
+            </View>
 
-                <View style={styles.section}>
-                    <Text style={styles.sectionTitle}>Gemini API Key</Text>
-                    <Text style={styles.description}>
-                        Your API key is used to analyze documents with Google Gemini AI.
-                    </Text>
+            <View style={styles.content}>
+                <Text style={styles.label}>Gemini API Key</Text>
+                <Text style={styles.description}>
+                    Your API key is stored securely on your device.
+                </Text>
 
-                    <TouchableOpacity style={styles.linkButton} onPress={openGeminiStudio}>
-                        <Text style={styles.linkText}>Get API Key →</Text>
-                    </TouchableOpacity>
-
+                <View style={styles.inputContainer}>
                     <TextInput
                         style={styles.input}
-                        placeholder="AIza..."
                         value={apiKey}
                         onChangeText={setApiKey}
+                        placeholder="Enter API Key"
+                        secureTextEntry={!isVisible}
                         autoCapitalize="none"
-                        autoCorrect={false}
-                        multiline
-                        numberOfLines={2}
-                        secureTextEntry={hasKey && apiKey.length > 0}
                     />
-
-                    <View style={styles.buttonRow}>
-                        <TouchableOpacity
-                            style={[styles.button, styles.buttonPrimary, loading && styles.buttonDisabled]}
-                            onPress={handleSave}
-                            disabled={loading}
-                        >
-                            <Text style={styles.buttonText}>Save</Text>
-                        </TouchableOpacity>
-
-                        <TouchableOpacity
-                            style={[styles.button, styles.buttonSecondary, loading && styles.buttonDisabled]}
-                            onPress={handleTest}
-                            disabled={loading}
-                        >
-                            <Text style={[styles.buttonText, styles.buttonTextSecondary]}>Test</Text>
-                        </TouchableOpacity>
-                    </View>
-
-                    {hasKey && (
-                        <TouchableOpacity style={styles.deleteButton} onPress={handleDelete}>
-                            <Text style={styles.deleteButtonText}>Delete API Key</Text>
-                        </TouchableOpacity>
-                    )}
+                    <TouchableOpacity onPress={() => setIsVisible(!isVisible)} style={styles.eyeIcon}>
+                        <Ionicons name={isVisible ? "eye-off" : "eye"} size={20} color={theme.colors.textSecondary} />
+                    </TouchableOpacity>
                 </View>
 
-                <View style={styles.infoSection}>
-                    <Text style={styles.infoTitle}>ℹ️ About API Keys</Text>
-                    <Text style={styles.infoText}>
-                        • Your API key is stored securely on your device{'\n'}
-                        • It's never shared or sent to our servers{'\n'}
-                        • Gemini offers 1,500 free requests per day{'\n'}
-                        • You can revoke keys anytime in Google AI Studio
-                    </Text>
+                <View style={styles.actions}>
+                    <TouchableOpacity style={[styles.button, styles.saveButton]} onPress={handleSave}>
+                        <Text style={styles.buttonText}>Save Key</Text>
+                    </TouchableOpacity>
+
+                    <TouchableOpacity
+                        style={[styles.button, styles.testButton]}
+                        onPress={handleTest}
+                        disabled={testing || !apiKey}
+                    >
+                        {testing ? (
+                            <ActivityIndicator color="#fff" size="small" />
+                        ) : (
+                            <Text style={styles.buttonText}>Test Key</Text>
+                        )}
+                    </TouchableOpacity>
                 </View>
 
-                <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
-                    <Text style={styles.backButtonText}>← Back to Timeline</Text>
+                <TouchableOpacity style={styles.clearButton} onPress={handleClear}>
+                    <Text style={styles.clearButtonText}>Clear API Key & Reset</Text>
                 </TouchableOpacity>
-            </ScrollView>
+
+                {process.env.EXPO_PUBLIC_GEMINI_API_KEY && (
+                    <View style={styles.infoBox}>
+                        <Ionicons name="information-circle" size={20} color={theme.colors.primary} />
+                        <Text style={styles.infoText}>
+                            An API key is also detected in your environment variables. This may override your manual settings on app restart.
+                        </Text>
+                    </View>
+                )}
+            </View>
         </SafeAreaView>
     );
 }
@@ -170,116 +152,100 @@ export default function SettingsScreen() {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: '#f5f5f5',
+        backgroundColor: theme.colors.background,
+    },
+    header: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        padding: theme.spacing.m,
+        borderBottomWidth: 1,
+        borderBottomColor: theme.colors.border,
+        backgroundColor: theme.colors.card,
+    },
+    backButton: {
+        padding: theme.spacing.xs,
+    },
+    headerTitle: {
+        ...theme.typography.h2,
     },
     content: {
-        padding: 20,
+        padding: theme.spacing.l,
     },
-    title: {
-        fontSize: 28,
-        fontWeight: 'bold',
-        color: '#333',
-        marginBottom: 24,
-    },
-    section: {
-        backgroundColor: '#fff',
-        borderRadius: 12,
-        padding: 20,
-        marginBottom: 16,
-    },
-    sectionTitle: {
-        fontSize: 18,
-        fontWeight: '600',
-        color: '#333',
-        marginBottom: 8,
+    label: {
+        ...theme.typography.h2,
+        marginBottom: theme.spacing.s,
     },
     description: {
-        fontSize: 14,
-        color: '#666',
-        marginBottom: 16,
-        lineHeight: 20,
+        ...theme.typography.body,
+        color: theme.colors.textSecondary,
+        marginBottom: theme.spacing.l,
     },
-    linkButton: {
-        marginBottom: 16,
-    },
-    linkText: {
-        color: '#007AFF',
-        fontSize: 15,
-        fontWeight: '500',
+    inputContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        borderWidth: 1,
+        borderColor: theme.colors.border,
+        borderRadius: theme.borderRadius.m,
+        backgroundColor: theme.colors.card,
+        marginBottom: theme.spacing.l,
     },
     input: {
-        backgroundColor: '#f9f9f9',
-        borderWidth: 1,
-        borderColor: '#ddd',
-        borderRadius: 8,
-        padding: 12,
-        fontSize: 14,
-        marginBottom: 16,
-        minHeight: 60,
+        flex: 1,
+        padding: theme.spacing.m,
+        fontSize: 16,
+        color: theme.colors.text,
     },
-    buttonRow: {
+    eyeIcon: {
+        padding: theme.spacing.m,
+    },
+    actions: {
         flexDirection: 'row',
-        gap: 12,
-        marginBottom: 12,
+        gap: theme.spacing.m,
+        marginBottom: theme.spacing.xl,
     },
     button: {
         flex: 1,
-        paddingVertical: 12,
-        borderRadius: 8,
+        padding: theme.spacing.m,
+        borderRadius: theme.borderRadius.m,
         alignItems: 'center',
+        justifyContent: 'center',
+        ...theme.shadows.card,
     },
-    buttonPrimary: {
-        backgroundColor: '#007AFF',
+    saveButton: {
+        backgroundColor: theme.colors.primary,
     },
-    buttonSecondary: {
-        backgroundColor: '#fff',
-        borderWidth: 1,
-        borderColor: '#007AFF',
-    },
-    buttonDisabled: {
-        opacity: 0.5,
+    testButton: {
+        backgroundColor: theme.colors.success,
     },
     buttonText: {
         color: '#fff',
-        fontSize: 15,
         fontWeight: '600',
+        fontSize: 16,
     },
-    buttonTextSecondary: {
-        color: '#007AFF',
-    },
-    deleteButton: {
-        paddingVertical: 12,
+    clearButton: {
+        padding: theme.spacing.m,
+        borderRadius: theme.borderRadius.m,
+        borderWidth: 1,
+        borderColor: theme.colors.error,
         alignItems: 'center',
     },
-    deleteButtonText: {
-        color: '#FF3B30',
-        fontSize: 15,
-        fontWeight: '500',
-    },
-    infoSection: {
-        backgroundColor: '#fff',
-        borderRadius: 12,
-        padding: 20,
-        marginBottom: 16,
-    },
-    infoTitle: {
-        fontSize: 16,
+    clearButtonText: {
+        color: theme.colors.error,
         fontWeight: '600',
-        color: '#333',
-        marginBottom: 12,
+        fontSize: 16,
+    },
+    infoBox: {
+        marginTop: theme.spacing.xl,
+        flexDirection: 'row',
+        backgroundColor: theme.colors.primaryLight + '40',
+        padding: theme.spacing.m,
+        borderRadius: theme.borderRadius.m,
+        gap: theme.spacing.s,
     },
     infoText: {
-        fontSize: 14,
-        color: '#666',
-        lineHeight: 22,
-    },
-    backButton: {
-        paddingVertical: 12,
-        alignItems: 'center',
-    },
-    backButtonText: {
-        color: '#007AFF',
-        fontSize: 16,
-        fontWeight: '500',
-    },
+        flex: 1,
+        ...theme.typography.small,
+        color: theme.colors.primary,
+    }
 });

@@ -8,6 +8,23 @@ export interface ParsedData {
     owner?: string;
 }
 
+export const testApiKey = async (apiKey: string): Promise<boolean> => {
+    try {
+        const GEMINI_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
+        const response = await fetch(GEMINI_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                contents: [{ parts: [{ text: "Hello" }] }]
+            })
+        });
+        return response.ok;
+    } catch (error) {
+        console.error('API Key Test Failed:', error);
+        return false;
+    }
+};
+
 const safeParseDate = (dateStr: any): string => {
     if (!dateStr) return new Date().toISOString();
     try {
@@ -41,8 +58,6 @@ export const parseDocumentWithGemini = async (uri: string): Promise<ParsedData[]
         // 1.5. Detect file type and set MIME type
         const isPdf = uri.toLowerCase().endsWith('.pdf');
         const mimeType = isPdf ? 'application/pdf' : 'image/jpeg';
-
-        console.log(`Processing ${isPdf ? 'PDF' : 'image'} with MIME type: ${mimeType}`);
 
         // 2. Construct Payload
         const payload = {

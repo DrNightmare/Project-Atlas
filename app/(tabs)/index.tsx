@@ -287,6 +287,9 @@ export default function TimelineScreen() {
           </>
         ) : (
           <>
+            <TouchableOpacity onPress={() => router.push('/settings')} style={styles.headerButton}>
+              <Ionicons name="settings-outline" size={24} color={theme.colors.text} />
+            </TouchableOpacity>
             <Text style={styles.headerTitle}>Travel Docs</Text>
             <TouchableOpacity
               onPress={handleAddDocument}

@@ -1,3 +1,4 @@
+import { Ionicons } from '@expo/vector-icons';
 import { isBefore, startOfDay } from 'date-fns';
 import * as DocumentPicker from 'expo-document-picker';
 import { useFocusEffect, useRouter } from 'expo-router';
@@ -8,6 +9,7 @@ import { DocumentCard } from '../../src/components/DocumentCard';
 import { addDocument, deleteDocument, Document, getDocuments, initDatabase, updateDocument } from '../../src/services/database';
 import { deleteFile, initFileStorage, saveFile } from '../../src/services/fileStorage';
 import { parseDocumentWithGemini } from '../../src/services/geminiParser';
+import { theme } from '../../src/theme';
 
 const showToast = (msg: string) => {
   if (Platform.OS === 'android') {
@@ -271,30 +273,39 @@ export default function TimelineScreen() {
       <View style={styles.header}>
         {selectionMode ? (
           <>
-            <TouchableOpacity onPress={cancelSelection}>
-              <Text style={styles.cancelButton}>Cancel</Text>
+            <TouchableOpacity onPress={cancelSelection} style={styles.headerButton}>
+              <Ionicons name="close" size={24} color={theme.colors.text} />
             </TouchableOpacity>
             <View style={styles.selectionActions}>
               <TouchableOpacity onPress={handleReprocess} style={styles.actionButton}>
-                <Text style={styles.reprocessButton}>Reprocess</Text>
+                <Ionicons name="refresh" size={24} color={theme.colors.primary} />
               </TouchableOpacity>
               <TouchableOpacity onPress={handleDelete} style={styles.actionButton}>
-                <Text style={styles.deleteButton}>Delete</Text>
+                <Ionicons name="trash-outline" size={24} color={theme.colors.error} />
               </TouchableOpacity>
             </View>
           </>
         ) : (
           <>
             <Text style={styles.headerTitle}>Travel Docs</Text>
-            <TouchableOpacity onPress={handleAddDocument} disabled={processing} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
-              <Text style={styles.addButton}>{processing ? '...' : 'Add'}</Text>
+            <TouchableOpacity
+              onPress={handleAddDocument}
+              disabled={processing}
+              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+              style={styles.headerButton}
+            >
+              {processing ? (
+                <ActivityIndicator size="small" color={theme.colors.primary} />
+              ) : (
+                <Ionicons name="add-circle" size={32} color={theme.colors.primary} />
+              )}
             </TouchableOpacity>
           </>
         )}
       </View>
 
       {loading ? (
-        <ActivityIndicator size="large" color="#007AFF" style={styles.loader} />
+        <ActivityIndicator size="large" color={theme.colors.primary} style={styles.loader} />
       ) : (
         <SectionList
           sections={sections}
@@ -314,7 +325,13 @@ export default function TimelineScreen() {
             </View>
           )}
           contentContainerStyle={styles.list}
-          ListEmptyComponent={<Text style={styles.emptyText}>No documents yet. Tap 'Add' to start.</Text>}
+          ListEmptyComponent={
+            <View style={styles.emptyContainer}>
+              <Ionicons name="documents-outline" size={64} color={theme.colors.textLight} />
+              <Text style={styles.emptyText}>No documents yet</Text>
+              <Text style={styles.emptySubtext}>Tap the + button to add your first trip</Text>
+            </View>
+          }
           stickySectionHeadersEnabled={false}
         />
       )}
@@ -325,71 +342,60 @@ export default function TimelineScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: theme.colors.background,
   },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    padding: 16,
-    backgroundColor: '#fff',
-    borderBottomWidth: 1,
-    borderBottomColor: '#eee',
-    height: 60,
+    paddingHorizontal: theme.spacing.l,
+    paddingVertical: theme.spacing.m,
+    backgroundColor: theme.colors.background,
   },
   headerTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: '#333',
+    ...theme.typography.h1,
   },
-  addButton: {
-    fontSize: 18,
-    color: '#007AFF',
-    fontWeight: '600',
-  },
-  cancelButton: {
-    fontSize: 16,
-    color: '#666',
-  },
-  deleteButton: {
-    fontSize: 16,
-    color: '#FF3B30',
-    fontWeight: '600',
+  headerButton: {
+    padding: theme.spacing.xs,
   },
   selectionActions: {
     flexDirection: 'row',
-    gap: 16,
+    gap: theme.spacing.l,
   },
   actionButton: {
-    padding: 4,
-  },
-  reprocessButton: {
-    fontSize: 16,
-    color: '#007AFF',
-    fontWeight: '600',
+    padding: theme.spacing.xs,
   },
   list: {
-    padding: 16,
+    paddingHorizontal: theme.spacing.m,
+    paddingBottom: theme.spacing.xl,
   },
   loader: {
     marginTop: 50,
   },
+  emptyContainer: {
+    alignItems: 'center',
+    marginTop: 100,
+  },
   emptyText: {
-    textAlign: 'center',
-    marginTop: 50,
-    color: '#999',
-    fontSize: 16,
+    ...theme.typography.h2,
+    marginTop: theme.spacing.m,
+    color: theme.colors.textSecondary,
+  },
+  emptySubtext: {
+    ...theme.typography.body,
+    color: theme.colors.textLight,
+    marginTop: theme.spacing.s,
   },
   sectionHeader: {
-    backgroundColor: '#f5f5f5',
-    paddingVertical: 8,
-    marginBottom: 8,
+    backgroundColor: theme.colors.background,
+    paddingVertical: theme.spacing.s,
+    marginTop: theme.spacing.m,
+    marginBottom: theme.spacing.xs,
   },
   sectionHeaderText: {
-    fontSize: 14,
-    fontWeight: 'bold',
-    color: '#666',
+    ...theme.typography.caption,
+    fontWeight: '700',
     textTransform: 'uppercase',
-    letterSpacing: 1,
+    letterSpacing: 1.2,
   },
 });

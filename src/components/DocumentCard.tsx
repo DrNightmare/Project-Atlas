@@ -3,6 +3,7 @@ import { format } from 'date-fns';
 import React from 'react';
 import { ActivityIndicator, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { Document } from '../services/database';
+import { theme } from '../theme';
 
 interface Props {
     doc: Document;
@@ -27,12 +28,12 @@ export const DocumentCard: React.FC<Props> = ({ doc, selected, onPress, onLongPr
 
     const getIcon = (type: string) => {
         switch (type) {
-            case 'Flight': return { name: 'airplane', color: '#007AFF' };
-            case 'Hotel': return { name: 'bed', color: '#FF9500' };
-            case 'Receipt': return { name: 'receipt', color: '#34C759' };
-            case 'PDF': return { name: 'document', color: '#FF3B30' };
-            case 'Image': return { name: 'image', color: '#5856D6' };
-            default: return { name: 'document-text', color: '#8E8E93' };
+            case 'Flight': return { name: 'airplane', color: theme.colors.flight };
+            case 'Hotel': return { name: 'bed', color: theme.colors.hotel };
+            case 'Receipt': return { name: 'receipt', color: theme.colors.receipt };
+            case 'PDF': return { name: 'document', color: theme.colors.textSecondary };
+            case 'Image': return { name: 'image', color: theme.colors.other };
+            default: return { name: 'document-text', color: theme.colors.textLight };
         }
     };
 
@@ -46,24 +47,31 @@ export const DocumentCard: React.FC<Props> = ({ doc, selected, onPress, onLongPr
             activeOpacity={0.7}
         >
             <View style={[styles.iconContainer, { backgroundColor: icon.color + '15' }]}>
-                <Ionicons name={icon.name as any} size={32} color={icon.color} />
+                <Ionicons name={icon.name as any} size={24} color={icon.color} />
             </View>
             <View style={styles.info}>
-                <Text style={styles.title}>{doc.title}</Text>
-                {doc.owner && (
-                    <Text style={styles.owner}>👤 {doc.owner}</Text>
-                )}
-                <Text style={styles.date}>{formatDateTime()}</Text>
-                <Text style={styles.type}>{doc.type}</Text>
+                <View style={styles.headerRow}>
+                    <Text style={styles.title} numberOfLines={1}>{doc.title}</Text>
+                    {doc.owner && (
+                        <View style={styles.ownerBadge}>
+                            <Text style={styles.ownerText}>{doc.owner.split(' ')[0]}</Text>
+                        </View>
+                    )}
+                </View>
+
+                <View style={styles.metaRow}>
+                    <Text style={styles.date}>{formatDateTime()}</Text>
+                    <Text style={styles.type}>{doc.type}</Text>
+                </View>
             </View>
             {selected && (
                 <View style={styles.checkIcon}>
-                    <Text style={styles.checkText}>✓</Text>
+                    <Ionicons name="checkmark" size={16} color="white" />
                 </View>
             )}
             {processing && (
                 <View style={styles.processingOverlay}>
-                    <ActivityIndicator size="small" color="#007AFF" />
+                    <ActivityIndicator size="small" color={theme.colors.primary} />
                 </View>
             )}
         </TouchableOpacity>
@@ -73,77 +81,91 @@ export const DocumentCard: React.FC<Props> = ({ doc, selected, onPress, onLongPr
 const styles = StyleSheet.create({
     card: {
         flexDirection: 'row',
-        backgroundColor: '#fff',
-        borderRadius: 12,
-        padding: 12,
-        marginBottom: 12,
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.1,
-        shadowRadius: 4,
-        elevation: 3,
-        borderWidth: 2,
-        borderColor: 'transparent',
-    },
-    selectedCard: {
-        borderColor: '#007AFF',
-        backgroundColor: '#F0F8FF',
-    },
-    iconContainer: {
-        width: 60,
-        height: 60,
-        borderRadius: 12,
-        justifyContent: 'center',
+        backgroundColor: theme.colors.card,
+        borderRadius: theme.borderRadius.m,
+        padding: theme.spacing.m,
+        marginBottom: theme.spacing.s,
+        ...theme.shadows.card,
+        borderWidth: 1,
+        borderColor: theme.colors.border,
         alignItems: 'center',
     },
-    info: {
-        marginLeft: 12,
+    selectedCard: {
+        borderColor: theme.colors.primary,
+        backgroundColor: theme.colors.primaryLight + '20', // 20% opacity
+    },
+    iconContainer: {
+        width: 48,
+        height: 48,
+        borderRadius: theme.borderRadius.s,
         justifyContent: 'center',
+        alignItems: 'center',
+        marginRight: theme.spacing.m,
+    },
+    info: {
         flex: 1,
+        justifyContent: 'center',
+    },
+    headerRow: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        marginBottom: 4,
     },
     title: {
         fontSize: 16,
         fontWeight: '600',
-        color: '#333',
+        color: theme.colors.text,
+        flex: 1,
+        marginRight: 8,
     },
-    owner: {
-        fontSize: 13,
-        color: '#007AFF',
-        marginTop: 2,
-        fontWeight: '500',
+    ownerBadge: {
+        backgroundColor: theme.colors.background,
+        paddingHorizontal: 6,
+        paddingVertical: 2,
+        borderRadius: 4,
+        borderWidth: 1,
+        borderColor: theme.colors.border,
+    },
+    ownerText: {
+        fontSize: 10,
+        fontWeight: '600',
+        color: theme.colors.textSecondary,
+    },
+    metaRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
     },
     date: {
-        fontSize: 14,
-        color: '#666',
-        marginTop: 4,
+        fontSize: 13,
+        color: theme.colors.textSecondary,
+        marginRight: 8,
     },
     type: {
-        fontSize: 12,
-        color: '#999',
-        marginTop: 2,
+        fontSize: 11,
+        color: theme.colors.textLight,
         fontWeight: '500',
+        textTransform: 'uppercase',
+        letterSpacing: 0.5,
     },
     checkIcon: {
         position: 'absolute',
-        top: 8,
-        right: 8,
+        top: -8,
+        right: -8,
         width: 24,
         height: 24,
         borderRadius: 12,
-        backgroundColor: '#007AFF',
+        backgroundColor: theme.colors.primary,
         justifyContent: 'center',
         alignItems: 'center',
-    },
-    checkText: {
-        color: '#fff',
-        fontWeight: 'bold',
-        fontSize: 14,
+        borderWidth: 2,
+        borderColor: theme.colors.card,
     },
     processingOverlay: {
         ...StyleSheet.absoluteFillObject,
-        backgroundColor: 'rgba(255,255,255,0.6)',
+        backgroundColor: theme.colors.overlay,
         justifyContent: 'center',
         alignItems: 'center',
-        borderRadius: 12,
+        borderRadius: theme.borderRadius.m,
     },
 });

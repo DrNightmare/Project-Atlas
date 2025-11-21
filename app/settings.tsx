@@ -1,5 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
-import { useRouter } from 'expo-router';
+import { useNavigation, useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import { ActivityIndicator, Alert, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -17,6 +17,11 @@ export default function SettingsScreen() {
     useEffect(() => {
         loadKey();
     }, []);
+
+    const navigation = useNavigation();
+    useEffect(() => {
+        navigation.setOptions({ title: 'Settings' });
+    }, [navigation]);
 
     const loadKey = async () => {
         try {
@@ -86,13 +91,6 @@ export default function SettingsScreen() {
 
     return (
         <SafeAreaView style={styles.container}>
-            <View style={styles.header}>
-                <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-                    <Ionicons name="arrow-back" size={24} color={theme.colors.text} />
-                </TouchableOpacity>
-                <Text style={styles.headerTitle}>Settings</Text>
-                <View style={{ width: 24 }} />
-            </View>
 
             <View style={styles.content}>
                 <Text style={styles.label}>Gemini API Key</Text>

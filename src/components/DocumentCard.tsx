@@ -1,16 +1,17 @@
 import { format } from 'date-fns';
 import React from 'react';
-import { Image, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, Image, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { Document } from '../services/database';
 
 interface Props {
     doc: Document;
     selected?: boolean;
+    processing?: boolean; // indicates background processing
     onPress?: () => void;
     onLongPress?: () => void;
 }
 
-export const DocumentCard: React.FC<Props> = ({ doc, selected, onPress, onLongPress }) => {
+export const DocumentCard: React.FC<Props> = ({ doc, selected, onPress, onLongPress, processing }) => {
     const formatDateTime = () => {
         const date = new Date(doc.docDate);
         const dateStr = format(date, 'MMM d, yyyy');
@@ -42,6 +43,11 @@ export const DocumentCard: React.FC<Props> = ({ doc, selected, onPress, onLongPr
             {selected && (
                 <View style={styles.checkIcon}>
                     <Text style={styles.checkText}>✓</Text>
+                </View>
+            )}
+            {processing && (
+                <View style={styles.processingOverlay}>
+                    <ActivityIndicator size="small" color="#007AFF" />
                 </View>
             )}
         </TouchableOpacity>

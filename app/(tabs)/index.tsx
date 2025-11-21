@@ -1,23 +1,31 @@
 import * as DocumentPicker from 'expo-document-picker';
 import { useFocusEffect, useRouter } from 'expo-router';
 import React, { useCallback, useEffect, useState } from 'react';
-import { ActivityIndicator, Alert, FlatList, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, Alert, FlatList, Platform, StyleSheet, Text, ToastAndroid, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { DocumentCard } from '../../src/components/DocumentCard';
 import { addDocument, deleteDocument, Document, getDocuments, initDatabase, updateDocument } from '../../src/services/database';
 import { deleteFile, initFileStorage, saveFile } from '../../src/services/fileStorage';
 import { parseDocumentWithGemini } from '../../src/services/geminiParser';
 
+const showToast = (msg: string) => {
+  if (Platform.OS === 'android') {
+    ToastAndroid.show(msg, ToastAndroid.SHORT);
+  } else {
+    Alert.alert('', msg);
+  }
+};
+
 export default function TimelineScreen() {
   const router = useRouter();
   const [documents, setDocuments] = useState<Document[]>([]);
   const [loading, setLoading] = useState(false);
-  const [processing, setProcessing] = useState(false);
+  const [processing, setProcessing] = useState(false); // for add/reprocess button state
   const [selectionMode, setSelectionMode] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
 
+  // Initialise DB and storage once
   useEffect(() => {
-    // Initialize DB and Storage on mount
     try {
       initDatabase();
       initFileStorage();
@@ -39,6 +47,7 @@ export default function TimelineScreen() {
     }
   }, []);
 
+  // Refresh when screen gains focus
   useFocusEffect(
     useCallback(() => {
       loadDocuments();
@@ -57,22 +66,46 @@ export default function TimelineScreen() {
       setProcessing(true);
       const asset = result.assets[0];
 
-      // 1. Save file locally
+      // Save file locally
       const savedUri = await saveFile(asset.uri);
 
-      // 2. Mock Parse
-      const parsedData = await parseDocumentWithGemini(savedUri);
-
-      // 3. Save to DB
-      addDocument(savedUri, parsedData.title, parsedData.date, parsedData.type, parsedData.owner);
-
-      // 4. Refresh
+      // Insert placeholder with processing flag
+      const placeholderTitle = asset.fileName || 'Untitled';
+      const placeholderDate = new Date().toISOString();
+      const placeholderType = asset.mimeType?.includes('pdf') ? 'PDF' : 'Image';
+      const docId = addDocument(
+        savedUri,
+        placeholderTitle,
+        placeholderDate,
+        placeholderType,
+        '', // owner unknown yet
+        1 // processing = true
+      );
       loadDocuments();
-      Alert.alert('Success', 'Document added successfully!');
+      showToast('Document added');
 
+      // Parse in background
+      parseDocumentWithGemini(savedUri)
+        .then((parsedData) => {
+          updateDocument(
+            docId,
+            parsedData.title,
+            parsedData.date,
+            parsedData.type,
+            parsedData.owner,
+            0
+          );
+          loadDocuments();
+        })
+        .catch((e) => {
+          console.error('Parsing failed', e);
+          // Mark as not processing even on failure
+          updateDocument(docId, placeholderTitle, placeholderDate, placeholderType, '', 0);
+          loadDocuments();
+        });
     } catch (error) {
       console.error(error);
-      Alert.alert('Error', 'Failed to add document');
+      showToast('Failed to add document');
     } finally {
       setProcessing(false);
     }
@@ -82,9 +115,7 @@ export default function TimelineScreen() {
     const newSelected = new Set(selectedIds);
     if (newSelected.has(id)) {
       newSelected.delete(id);
-      if (newSelected.size === 0) {
-        setSelectionMode(false);
-      }
+      if (newSelected.size === 0) setSelectionMode(false);
     } else {
       newSelected.add(id);
     }
@@ -100,74 +131,67 @@ export default function TimelineScreen() {
     if (selectionMode) {
       toggleSelection(doc.id);
     } else {
-      router.push({
-        pathname: '/document-view',
-        params: { uri: doc.uri, title: doc.title }
-      });
+      router.push({ pathname: '/document-view', params: { uri: doc.uri, title: doc.title } });
     }
   };
 
   const handleDelete = async () => {
-    Alert.alert(
-      'Delete Documents',
-      `Are you sure you want to delete ${selectedIds.size} document(s)?`,
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Delete',
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              const docsToDelete = documents.filter(d => selectedIds.has(d.id));
-              for (const doc of docsToDelete) {
-                await deleteFile(doc.uri);
-                deleteDocument(doc.id);
-              }
-              setSelectionMode(false);
-              setSelectedIds(new Set());
-              loadDocuments();
-            } catch (e) {
-              Alert.alert('Error', 'Failed to delete documents');
+    Alert.alert('Delete Documents', `Are you sure you want to delete ${selectedIds.size} document(s)?`, [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Delete',
+        style: 'destructive',
+        onPress: async () => {
+          try {
+            const docsToDelete = documents.filter((d) => selectedIds.has(d.id));
+            for (const doc of docsToDelete) {
+              await deleteFile(doc.uri);
+              deleteDocument(doc.id);
             }
+            setSelectionMode(false);
+            setSelectedIds(new Set());
+            loadDocuments();
+          } catch (e) {
+            Alert.alert('Error', 'Failed to delete documents');
           }
-        }
-      ]
-    );
+        },
+      },
+    ]);
   };
 
   const handleReprocess = async () => {
     setProcessing(true);
     try {
-      const docsToReprocess = documents.filter(d => selectedIds.has(d.id));
+      const docsToReprocess = documents.filter((d) => selectedIds.has(d.id));
       let successCount = 0;
 
       for (const doc of docsToReprocess) {
         try {
+          // Mark as processing
+          updateDocument(doc.id, doc.title, doc.docDate, doc.type, doc.owner, 1);
           const parsedData = await parseDocumentWithGemini(doc.uri);
-          // Assuming updateDocument is imported and available
-          // We need to update the import statement first, but for now I'll assume it's there
-          // or I will fix the import in a separate step if needed.
-          // Actually, I should have updated the import in the previous step or this one.
-          // Let's assume I'll fix the import below or it was already imported (it wasn't).
-          // Wait, I can't assume. I need to update the import.
-          // I will update the import in this same tool call if possible? No, single contiguous block.
-          // I will update the import in a separate tool call.
-          // For now, I will use a placeholder and fix it immediately.
-          // Actually, I can just use the function if I import it.
-          // Let's just add the logic here and I'll fix the import in the next step.
-          updateDocument(doc.id, parsedData.title, parsedData.date, parsedData.type, parsedData.owner);
+          updateDocument(
+            doc.id,
+            parsedData.title,
+            parsedData.date,
+            parsedData.type,
+            parsedData.owner,
+            0
+          );
           successCount++;
         } catch (e) {
           console.error(`Failed to reprocess doc ${doc.id}`, e);
+          // Reset processing flag on error
+          updateDocument(doc.id, doc.title, doc.docDate, doc.type, doc.owner, 0);
         }
       }
 
-      Alert.alert('Success', `Reprocessed ${successCount} document(s)`);
+      showToast(`Reprocessed ${successCount} document(s)`);
       setSelectionMode(false);
       setSelectedIds(new Set());
       loadDocuments();
     } catch (e) {
-      Alert.alert('Error', 'Failed to reprocess documents');
+      showToast('Failed to reprocess documents');
     } finally {
       setProcessing(false);
     }
@@ -198,11 +222,7 @@ export default function TimelineScreen() {
         ) : (
           <>
             <Text style={styles.headerTitle}>Travel Docs</Text>
-            <TouchableOpacity
-              onPress={handleAddDocument}
-              disabled={processing}
-              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-            >
+            <TouchableOpacity onPress={handleAddDocument} disabled={processing} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
               <Text style={styles.addButton}>{processing ? '...' : 'Add'}</Text>
             </TouchableOpacity>
           </>
@@ -219,14 +239,13 @@ export default function TimelineScreen() {
             <DocumentCard
               doc={item}
               selected={selectedIds.has(item.id)}
+              processing={item.processing === 1}
               onPress={() => handlePress(item)}
               onLongPress={() => handleLongPress(item.id)}
             />
           )}
           contentContainerStyle={styles.list}
-          ListEmptyComponent={
-            <Text style={styles.emptyText}>No documents yet. Tap 'Add' to start.</Text>
-          }
+          ListEmptyComponent={<Text style={styles.emptyText}>No documents yet. Tap 'Add' to start.</Text>}
         />
       )}
     </SafeAreaView>

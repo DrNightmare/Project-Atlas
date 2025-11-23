@@ -25,6 +25,7 @@ export const DocumentCard: React.FC<Props> = ({ doc, selected, onPress, onLongPr
         switch (type) {
             case 'Flight': return { name: 'airplane', color: theme.colors.flight };
             case 'Hotel': return { name: 'bed', color: theme.colors.hotel };
+            case 'Event': return { name: 'ticket', color: theme.colors.event };
             case 'Receipt': return { name: 'receipt', color: theme.colors.receipt };
             case 'PDF': return { name: 'document', color: theme.colors.textSecondary };
             case 'Image': return { name: 'image', color: theme.colors.other };

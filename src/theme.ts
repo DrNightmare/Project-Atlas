@@ -21,6 +21,7 @@ export const theme = {
         // Type Specific
         flight: '#3B82F6', // Blue 500
         hotel: '#F59E0B', // Amber 500
+        event: '#8B5CF6', // Violet 500
         receipt: '#10B981', // Emerald 500
         other: '#6366F1', // Indigo 500
 

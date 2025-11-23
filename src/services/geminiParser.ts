@@ -4,7 +4,7 @@ import { getApiKey } from './apiKeyStorage';
 export interface ParsedData {
     title: string;
     date: string;
-    type: 'Flight' | 'Hotel' | 'Receipt' | 'Other';
+    type: 'Flight' | 'Hotel' | 'Receipt' | 'Event' | 'Other';
     owner?: string;
     missingFields?: string[];
 }
@@ -70,7 +70,7 @@ export const parseDocumentWithGemini = async (uri: string): Promise<ParsedData[]
         const payload = {
             contents: [{
                 parts: [
-                    { text: "Analyze this travel document. Extract the following fields in strict JSON format:\n- 'title': A short descriptive title (e.g., 'Flight to Mumbai', 'Hotel Booking - Taj')\n- 'date': The most relevant date and time in ISO 8601 format (e.g., flight departure time, hotel check-in time, transaction time). If no date is found, return null.\n- 'type': One of: Flight, Hotel, Receipt, Other\n- 'owner': The person's name this document belongs to (passenger name, guest name, customer name). Format the name in title case (e.g., 'Arvind P'), remove titles like Mr/Mrs/Ms, and replace slashes with spaces. If no name is found, return null.\n\nIf multiple distinct documents or receipts are visible in the file, return a JSON ARRAY of objects, one for each item. If only one is found, you can return a single object or an array of one object.\n\nDo not include markdown formatting like ```json." },
+                    { text: "Analyze this travel document. Extract the following fields in strict JSON format:\n- 'title': A short descriptive title (e.g., 'Flight to Mumbai', 'Hotel Booking - Taj', 'Concert Ticket - Coldplay')\n- 'date': The most relevant date and time in ISO 8601 format (e.g., flight departure time, hotel check-in time, event start time). If no date is found, return null.\n- 'type': One of: Flight, Hotel, Receipt, Event, Other\n- 'owner': The person's name this document belongs to (passenger name, guest name, customer name). Format the name in title case (e.g., 'Arvind P'), remove titles like Mr/Mrs/Ms, and replace slashes with spaces. If no name is found, return null.\n\nIf multiple distinct documents or receipts are visible in the file, return a JSON ARRAY of objects, one for each item. If only one is found, you can return a single object or an array of one object.\n\nDo not include markdown formatting like ```json." },
                     {
                         inline_data: {
                             mime_type: mimeType,
@@ -125,7 +125,7 @@ export const parseDocumentWithGemini = async (uri: string): Promise<ParsedData[]
             return {
                 title: docData.title || 'Untitled Document',
                 date: date,
-                type: docData.type || 'Other',
+                type: (docData.type as any) || 'Other',
                 owner: docData.owner || undefined,
                 missingFields: missingFields.length > 0 ? missingFields : undefined
             };

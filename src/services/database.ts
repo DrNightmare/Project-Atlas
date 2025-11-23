@@ -7,7 +7,7 @@ export interface Document {
   uri: string;
   title: string;
   docDate: string;
-  type: string;
+  type: 'Flight' | 'Hotel' | 'Receipt' | 'Event' | 'Other';
   owner?: string;
   createdAt: string;
   processing: number; // 0 = false, 1 = true

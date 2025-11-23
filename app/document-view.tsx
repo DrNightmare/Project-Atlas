@@ -29,7 +29,7 @@ import { theme } from '../src/theme';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
-const DOCUMENT_TYPES = ['Flight', 'Hotel', 'Receipt', 'Other'];
+const DOCUMENT_TYPES = ['Flight', 'Hotel', 'Event', 'Receipt', 'Other'];
 
 export default function DocumentViewScreen() {
     const { uri, title, id, autoEdit, missingFields } = useLocalSearchParams<{
@@ -171,7 +171,7 @@ export default function DocumentViewScreen() {
                 ...document,
                 title: editTitle,
                 docDate: editDate.toISOString(),
-                type: editType,
+                type: editType as any,
                 owner: editOwner
             });
             setIsEditing(false);

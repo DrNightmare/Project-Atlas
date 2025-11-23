@@ -59,6 +59,10 @@ export const getDocuments = (): Document[] => {
   return db.getAllSync<Document>('SELECT * FROM documents ORDER BY docDate ASC');
 };
 
+export const getDocumentById = (id: number): Document | null => {
+  return db.getFirstSync<Document>('SELECT * FROM documents WHERE id = ?', id);
+};
+
 export const deleteDocument = (id: number) => {
   db.runSync('DELETE FROM documents WHERE id = ?', id);
 };

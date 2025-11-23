@@ -193,7 +193,7 @@ export default function TimelineScreen() {
     if (selectionMode) {
       toggleSelection(doc.id);
     } else {
-      router.push({ pathname: '/document-view', params: { uri: doc.uri, title: doc.title } });
+      router.push({ pathname: '/document-view', params: { uri: doc.uri, title: doc.title, id: doc.id } });
     }
   };
 

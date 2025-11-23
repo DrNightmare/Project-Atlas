@@ -57,7 +57,6 @@ export const DocumentCard: React.FC<Props> = ({ doc, selected, onPress, onLongPr
 
                 <View style={styles.metaRow}>
                     <Text style={styles.date}>{formatDateTime()}</Text>
-                    <Text style={styles.type}>{doc.type}</Text>
                 </View>
             </View>
             {selected && (
@@ -137,10 +136,14 @@ const styles = StyleSheet.create({
         color: theme.colors.textSecondary,
         marginRight: 8,
     },
+    typeBadge: {
+        paddingHorizontal: 8,
+        paddingVertical: 3,
+        borderRadius: 6,
+    },
     type: {
         fontSize: 11,
-        color: theme.colors.textLight,
-        fontWeight: '500',
+        fontWeight: '600',
         textTransform: 'uppercase',
         letterSpacing: 0.5,
     },

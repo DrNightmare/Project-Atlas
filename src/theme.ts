@@ -25,6 +25,13 @@ export const theme = {
         receipt: '#10B981', // Emerald 500
         other: '#6366F1', // Indigo 500
 
+        // Identity Document Types
+        passport: '#6366F1', // Indigo 500
+        visa: '#8B5CF6', // Violet 500
+        aadhaar: '#EC4899', // Pink 500
+        license: '#14B8A6', // Teal 500
+        pan: '#F59E0B', // Amber 500
+
         // UI
         border: '#E2E8F0', // Slate 200
         divider: '#F1F5F9', // Slate 100

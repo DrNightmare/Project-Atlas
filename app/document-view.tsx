@@ -32,12 +32,20 @@ const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 const DOCUMENT_TYPES = ['Flight', 'Hotel', 'Receipt', 'Other'];
 
 export default function DocumentViewScreen() {
-    const { uri, title, id } = useLocalSearchParams<{ uri: string; title: string; id: string }>();
+    const { uri, title, id, autoEdit, missingFields } = useLocalSearchParams<{
+        uri: string;
+        title: string;
+        id: string;
+        autoEdit?: string;
+        missingFields?: string;
+    }>();
+
     const router = useRouter();
     const isPdf = uri?.toLowerCase().endsWith('.pdf');
     const [pdfSource, setPdfSource] = useState<any>(null);
     const [document, setDocument] = useState<Document | null>(null);
     const [isEditing, setIsEditing] = useState(false);
+    const [missingFieldsList, setMissingFieldsList] = useState<string[]>([]);
 
     // Edit State
     const [editTitle, setEditTitle] = useState('');
@@ -45,6 +53,7 @@ export default function DocumentViewScreen() {
     const [editOwner, setEditOwner] = useState('');
     const [editDate, setEditDate] = useState(new Date());
     const [showDatePicker, setShowDatePicker] = useState(false);
+    const [showTimePicker, setShowTimePicker] = useState(false);
 
     const scale = useSharedValue(1);
     const savedScale = useSharedValue(1);
@@ -62,9 +71,22 @@ export default function DocumentViewScreen() {
                 setEditType(doc.type);
                 setEditOwner(doc.owner || '');
                 setEditDate(new Date(doc.docDate));
+
+                // Handle Auto-Edit
+                if (autoEdit === 'true') {
+                    setIsEditing(true);
+                    if (missingFields) {
+                        try {
+                            const parsed = JSON.parse(missingFields);
+                            setMissingFieldsList(Array.isArray(parsed) ? parsed : []);
+                        } catch (e) {
+                            console.error('Failed to parse missing fields', e);
+                        }
+                    }
+                }
             }
         }
-    }, [id]);
+    }, [id, autoEdit, missingFields]);
 
     useEffect(() => {
         const loadPdf = async () => {
@@ -153,6 +175,8 @@ export default function DocumentViewScreen() {
                 owner: editOwner
             });
             setIsEditing(false);
+            // Clear missing fields warnings after save
+            setMissingFieldsList([]);
         }
     };
 
@@ -288,16 +312,37 @@ export default function DocumentViewScreen() {
                                 placeholder="Document Title"
                             />
 
-                            <Text style={styles.label}>Date</Text>
-                            <TouchableOpacity
-                                style={styles.dateButton}
-                                onPress={() => setShowDatePicker(true)}
-                            >
-                                <Text style={styles.dateButtonText}>
-                                    {format(editDate, 'MMM dd, yyyy')}
-                                </Text>
-                                <Ionicons name="calendar-outline" size={20} color={theme.colors.textSecondary} />
-                            </TouchableOpacity>
+                            <Text style={styles.label}>Date & Time</Text>
+                            <View style={styles.dateTimeRow}>
+                                <TouchableOpacity
+                                    style={[
+                                        styles.dateButton,
+                                        missingFieldsList.includes('time') && styles.inputWarning
+                                    ]}
+                                    onPress={() => setShowDatePicker(true)}
+                                >
+                                    <Text style={styles.dateButtonText}>
+                                        {format(editDate, 'MMM dd, yyyy')}
+                                    </Text>
+                                    <Ionicons name="calendar-outline" size={20} color={theme.colors.textSecondary} />
+                                </TouchableOpacity>
+
+                                <TouchableOpacity
+                                    style={[
+                                        styles.dateButton,
+                                        missingFieldsList.includes('time') && styles.inputWarning
+                                    ]}
+                                    onPress={() => setShowTimePicker(true)}
+                                >
+                                    <Text style={styles.dateButtonText}>
+                                        {format(editDate, 'h:mm a')}
+                                    </Text>
+                                    <Ionicons name="time-outline" size={20} color={theme.colors.textSecondary} />
+                                </TouchableOpacity>
+                            </View>
+                            {missingFieldsList.includes('time') && (
+                                <Text style={styles.warningText}>Time not found - defaults to midnight</Text>
+                            )}
 
                             {showDatePicker && (
                                 <DateTimePicker
@@ -307,12 +352,31 @@ export default function DocumentViewScreen() {
                                     onChange={(event, selectedDate) => {
                                         setShowDatePicker(false);
                                         if (selectedDate) {
-                                            setEditDate(selectedDate);
+                                            const newDate = new Date(selectedDate);
+                                            newDate.setHours(editDate.getHours());
+                                            newDate.setMinutes(editDate.getMinutes());
+                                            setEditDate(newDate);
                                         }
                                     }}
                                 />
                             )}
 
+                            {showTimePicker && (
+                                <DateTimePicker
+                                    value={editDate}
+                                    mode="time"
+                                    display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+                                    onChange={(event, selectedDate) => {
+                                        setShowTimePicker(false);
+                                        if (selectedDate) {
+                                            const newDate = new Date(editDate);
+                                            newDate.setHours(selectedDate.getHours());
+                                            newDate.setMinutes(selectedDate.getMinutes());
+                                            setEditDate(newDate);
+                                        }
+                                    }}
+                                />
+                            )}
                             <Text style={styles.label}>Type</Text>
                             <View style={styles.typeContainer}>
                                 {DOCUMENT_TYPES.map((type) => (
@@ -336,11 +400,17 @@ export default function DocumentViewScreen() {
 
                             <Text style={styles.label}>Owner</Text>
                             <TextInput
-                                style={styles.input}
+                                style={[
+                                    styles.input,
+                                    missingFieldsList.includes('owner') && styles.inputWarning
+                                ]}
                                 value={editOwner}
                                 onChangeText={setEditOwner}
                                 placeholder="Document Owner"
                             />
+                            {missingFieldsList.includes('owner') && (
+                                <Text style={styles.warningText}>Owner not found</Text>
+                            )}
                         </ScrollView>
 
                         <View style={styles.modalFooter}>
@@ -438,7 +508,22 @@ const styles = StyleSheet.create({
         borderWidth: 1,
         borderColor: theme.colors.border,
     },
+    inputWarning: {
+        borderColor: 'orange',
+        borderWidth: 1,
+    },
+    warningText: {
+        color: 'orange',
+        fontSize: 12,
+        marginTop: 4,
+        marginLeft: 4,
+    },
+    dateTimeRow: {
+        flexDirection: 'row',
+        gap: 12,
+    },
     dateButton: {
+        flex: 1,
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',

@@ -143,6 +143,20 @@ export default function TimelineScreen() {
           }
 
           loadDocuments();
+
+          // Check for missing fields and auto-navigate
+          if (firstItem.missingFields && firstItem.missingFields.length > 0) {
+            router.push({
+              pathname: '/document-view',
+              params: {
+                uri: savedUri,
+                title: firstItem.title,
+                id: docId,
+                autoEdit: 'true',
+                missingFields: JSON.stringify(firstItem.missingFields)
+              }
+            });
+          }
         })
         .catch((e) => {
           console.error('Parsing failed', e);

@@ -6,6 +6,7 @@ export interface ParsedData {
     date: string;
     type: 'Flight' | 'Hotel' | 'Receipt' | 'Other';
     owner?: string;
+    missingFields?: string[];
 }
 
 // Custom error for missing API key
@@ -107,12 +108,28 @@ export const parseDocumentWithGemini = async (uri: string): Promise<ParsedData[]
         // Normalise to array
         const items = Array.isArray(parsed) ? parsed : [parsed];
 
-        return items.map((docData: any) => ({
-            title: docData.title || 'Untitled Document',
-            date: safeParseDate(docData.date),
-            type: docData.type || 'Other',
-            owner: docData.owner || undefined,
-        }));
+        return items.map((docData: any) => {
+            const date = safeParseDate(docData.date);
+            const missingFields: string[] = [];
+
+            // Check if time is missing (midnight)
+            if (date.endsWith('T00:00:00.000Z') || date.endsWith('T00:00:00Z')) {
+                missingFields.push('time');
+            }
+
+            // Check if owner is missing
+            if (!docData.owner) {
+                missingFields.push('owner');
+            }
+
+            return {
+                title: docData.title || 'Untitled Document',
+                date: date,
+                type: docData.type || 'Other',
+                owner: docData.owner || undefined,
+                missingFields: missingFields.length > 0 ? missingFields : undefined
+            };
+        });
 
     } catch (error) {
         console.error('Parsing Error:', error);

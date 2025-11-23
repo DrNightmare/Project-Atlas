@@ -18,12 +18,7 @@ export const DocumentCard: React.FC<Props> = ({ doc, selected, onPress, onLongPr
         const date = new Date(doc.docDate);
         const dateStr = format(date, 'MMM d, yyyy');
         const timeStr = format(date, 'h:mm a');
-
-        // Show time for flights and receipts
-        if (doc.type === 'Flight' || doc.type === 'Receipt') {
-            return `${dateStr} • ${timeStr}`;
-        }
-        return dateStr;
+        return `${dateStr} • ${timeStr}`;
     };
 
     const getIcon = (type: string) => {

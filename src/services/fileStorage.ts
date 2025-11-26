@@ -10,9 +10,14 @@ export const initFileStorage = async () => {
     }
 };
 
-export const saveFile = async (uri: string): Promise<string> => {
-    const filename = uri.split('/').pop();
+export const saveFile = async (uri: string, fileName?: string): Promise<string> => {
+    let filename = fileName;
+    if (!filename) {
+        filename = uri.split('/').pop();
+    }
     if (!filename) throw new Error('Invalid URI');
+
+    // Ensure unique filename
     const newPath = DOCS_DIR + Date.now() + '_' + filename;
     await ExpoFileSystem.copyAsync({
         from: uri,

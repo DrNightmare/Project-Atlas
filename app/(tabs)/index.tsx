@@ -95,7 +95,7 @@ export default function TimelineScreen() {
       const asset = result.assets[0];
 
       // Save file locally
-      const savedUri = await saveFile(asset.uri);
+      const savedUri = await saveFile(asset.uri, asset.name);
 
       // Insert placeholder with processing flag
       const placeholderTitle = asset.name || 'Untitled';

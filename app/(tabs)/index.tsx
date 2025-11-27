@@ -6,6 +6,7 @@ import React, { useCallback, useEffect, useState } from 'react';
 import { ActivityIndicator, Alert, Platform, SectionList, StyleSheet, Text, ToastAndroid, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { DocumentCard } from '../../src/components/DocumentCard';
+import { FloatingActionButton } from '../../src/components/FloatingActionButton';
 import { addDocument, deleteDocument, Document, getDocuments, initDatabase, updateDocument } from '../../src/services/database';
 import { deleteFile, initFileStorage, saveFile } from '../../src/services/fileStorage';
 import { ApiKeyMissingError, parseDocumentWithGemini } from '../../src/services/geminiParser';
@@ -342,18 +343,7 @@ export default function TimelineScreen() {
               <Ionicons name="settings-outline" size={24} color={theme.colors.text} />
             </TouchableOpacity>
             <Text style={styles.headerTitle}>Timeline</Text>
-            <TouchableOpacity
-              onPress={handleAddDocument}
-              disabled={processing}
-              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-              style={styles.headerButton}
-            >
-              {processing ? (
-                <ActivityIndicator size="small" color={theme.colors.primary} />
-              ) : (
-                <Ionicons name="add-circle" size={32} color={theme.colors.primary} />
-              )}
-            </TouchableOpacity>
+            <View style={styles.headerButton} />
           </>
         )}
       </View>
@@ -387,6 +377,14 @@ export default function TimelineScreen() {
             </View>
           }
           stickySectionHeadersEnabled={false}
+        />
+      )}
+
+      {!selectionMode && (
+        <FloatingActionButton
+          onPress={handleAddDocument}
+          disabled={processing}
+          processing={processing}
         />
       )}
     </SafeAreaView>

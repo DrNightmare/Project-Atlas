@@ -3,8 +3,9 @@ import { useFocusEffect } from '@react-navigation/native';
 import * as DocumentPicker from 'expo-document-picker';
 import { useRouter } from 'expo-router';
 import React, { useCallback, useState } from 'react';
-import { ActivityIndicator, Alert, FlatList, Platform, StyleSheet, Text, ToastAndroid, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, Alert, FlatList, Platform, StyleSheet, Text, ToastAndroid, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { FloatingActionButton } from '../../src/components/FloatingActionButton';
 import { IdentityDocumentCard } from '../../src/components/IdentityDocumentCard';
 import { addIdentityDocument, getIdentityDocuments, IdentityDocument, initDatabase } from '../../src/services/database';
 import { saveFile } from '../../src/services/fileStorage';
@@ -143,18 +144,6 @@ export default function IdentityScreen() {
         <SafeAreaView style={styles.container}>
             <View style={styles.header}>
                 <Text style={styles.headerTitle}>Identity</Text>
-                <TouchableOpacity
-                    onPress={handleAddDocument}
-                    disabled={processing}
-                    hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-                    style={styles.headerButton}
-                >
-                    {processing ? (
-                        <ActivityIndicator size="small" color={theme.colors.primary} />
-                    ) : (
-                        <Ionicons name="add-circle" size={32} color={theme.colors.primary} />
-                    )}
-                </TouchableOpacity>
             </View>
 
             {loading ? (
@@ -176,6 +165,12 @@ export default function IdentityScreen() {
                     }
                 />
             )}
+
+            <FloatingActionButton
+                onPress={handleAddDocument}
+                disabled={processing}
+                processing={processing}
+            />
         </SafeAreaView>
     );
 }

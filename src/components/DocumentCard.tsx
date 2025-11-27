@@ -48,12 +48,17 @@ export const DocumentCard: React.FC<Props> = ({ doc, selected, onPress, onLongPr
             <View style={styles.info}>
                 <View style={styles.headerRow}>
                     <Text style={styles.title} numberOfLines={1}>{doc.title}</Text>
-                    {doc.owner && (
-                        <View style={styles.ownerBadge}>
-                            <Text style={styles.ownerText}>{doc.owner.split(' ')[0]}</Text>
-                        </View>
-                    )}
                 </View>
+
+                {doc.owner && (
+                    <View style={styles.ownersContainer}>
+                        {doc.owner.split(',').map((owner, index) => (
+                            <View key={index} style={styles.ownerBadge}>
+                                <Text style={styles.ownerText}>{owner.trim().split(' ')[0]}</Text>
+                            </View>
+                        ))}
+                    </View>
+                )}
 
                 <View style={styles.metaRow}>
                     <Text style={styles.date}>{formatDateTime()}</Text>
@@ -113,6 +118,12 @@ const styles = StyleSheet.create({
         color: theme.colors.text,
         flex: 1,
         marginRight: 8,
+    },
+    ownersContainer: {
+        flexDirection: 'row',
+        gap: 4,
+        flexWrap: 'wrap',
+        marginBottom: 6,
     },
     ownerBadge: {
         backgroundColor: theme.colors.background,

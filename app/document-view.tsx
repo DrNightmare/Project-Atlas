@@ -29,7 +29,7 @@ import { theme } from '../src/theme';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
-const DOCUMENT_TYPES = ['Flight', 'Hotel', 'Event', 'Receipt', 'Other'];
+const DOCUMENT_TYPES = ['Transport', 'Stay', 'Activity', 'Receipt', 'Other'];
 
 export default function DocumentViewScreen() {
     const { uri, title, id, autoEdit, missingFields } = useLocalSearchParams<{
@@ -155,6 +155,16 @@ export default function DocumentViewScreen() {
 
         loadPdf();
     }, [uri, isPdf]);
+
+    const getTypeColor = (type: string) => {
+        switch (type) {
+            case 'Transport': return theme.colors.flight;
+            case 'Stay': return theme.colors.hotel;
+            case 'Activity': return theme.colors.event;
+            case 'Receipt': return theme.colors.receipt;
+            default: return theme.colors.textLight;
+        }
+    };
 
     const handleSave = () => {
         if (document) {
@@ -384,13 +394,15 @@ export default function DocumentViewScreen() {
                                         key={type}
                                         style={[
                                             styles.typeButton,
-                                            editType === type && styles.typeButtonActive
+                                            editType === type && styles.typeButtonActive,
+                                            { backgroundColor: getTypeColor(type) + '15' }
                                         ]}
                                         onPress={() => setEditType(type)}
                                     >
                                         <Text style={[
                                             styles.typeButtonText,
-                                            editType === type && styles.typeButtonTextActive
+                                            editType === type && styles.typeButtonTextActive,
+                                            { color: getTypeColor(type) }
                                         ]}>
                                             {type}
                                         </Text>

@@ -106,6 +106,7 @@ export default function TimelineScreen() {
         placeholderTitle,
         placeholderDate,
         placeholderType,
+        undefined, // subType unknown yet
         '', // owner unknown yet
         1 // processing = true
       );
@@ -122,6 +123,7 @@ export default function TimelineScreen() {
             firstItem.title,
             firstItem.date,
             firstItem.type,
+            firstItem.subType,
             firstItem.owner,
             0
           );
@@ -135,6 +137,7 @@ export default function TimelineScreen() {
                 item.title,
                 item.date,
                 item.type,
+                item.subType,
                 item.owner,
                 0 // Not processing
               );
@@ -254,6 +257,7 @@ export default function TimelineScreen() {
             firstItem.title,
             firstItem.date,
             firstItem.type,
+            firstItem.subType,
             firstItem.owner,
             0
           );
@@ -267,6 +271,7 @@ export default function TimelineScreen() {
                 item.title,
                 item.date,
                 item.type,
+                item.subType,
                 item.owner,
                 0
               );

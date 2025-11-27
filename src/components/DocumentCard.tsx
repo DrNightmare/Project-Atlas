@@ -21,11 +21,28 @@ export const DocumentCard: React.FC<Props> = ({ doc, selected, onPress, onLongPr
         return `${dateStr} • ${timeStr}`;
     };
 
-    const getIcon = (type: string) => {
+    const getIcon = (type: string, subType?: string) => {
+        // Check subType first for specific icons
+        if (subType) {
+            const lowerSub = subType.toLowerCase();
+            if (lowerSub.includes('flight') || lowerSub.includes('plane')) return { name: 'airplane', color: theme.colors.flight };
+            if (lowerSub.includes('bus')) return { name: 'bus', color: theme.colors.flight };
+            if (lowerSub.includes('train') || lowerSub.includes('rail')) return { name: 'train', color: theme.colors.flight };
+            if (lowerSub.includes('boat') || lowerSub.includes('ferry') || lowerSub.includes('ship')) return { name: 'boat', color: theme.colors.flight };
+            if (lowerSub.includes('car') || lowerSub.includes('taxi') || lowerSub.includes('uber')) return { name: 'car', color: theme.colors.flight };
+
+            if (lowerSub.includes('hotel')) return { name: 'bed', color: theme.colors.hotel };
+            if (lowerSub.includes('home') || lowerSub.includes('airbnb') || lowerSub.includes('apartment')) return { name: 'home', color: theme.colors.hotel };
+
+            if (lowerSub.includes('concert') || lowerSub.includes('music')) return { name: 'musical-notes', color: theme.colors.event };
+            if (lowerSub.includes('museum')) return { name: 'easel', color: theme.colors.event };
+        }
+
+        // Fallback to main category
         switch (type) {
-            case 'Flight': return { name: 'airplane', color: theme.colors.flight };
-            case 'Hotel': return { name: 'bed', color: theme.colors.hotel };
-            case 'Event': return { name: 'ticket', color: theme.colors.event };
+            case 'Transport': return { name: 'airplane', color: theme.colors.flight }; // Default transport
+            case 'Stay': return { name: 'bed', color: theme.colors.hotel };
+            case 'Activity': return { name: 'ticket', color: theme.colors.event };
             case 'Receipt': return { name: 'receipt', color: theme.colors.receipt };
             case 'PDF': return { name: 'document', color: theme.colors.textSecondary };
             case 'Image': return { name: 'image', color: theme.colors.other };
@@ -33,7 +50,7 @@ export const DocumentCard: React.FC<Props> = ({ doc, selected, onPress, onLongPr
         }
     };
 
-    const icon = getIcon(doc.type);
+    const icon = getIcon(doc.type, doc.subType);
 
     return (
         <TouchableOpacity

@@ -339,11 +339,10 @@ export default function TimelineScreen() {
           </>
         ) : (
           <>
+            <Text style={styles.headerTitle}>Timeline</Text>
             <TouchableOpacity onPress={() => router.push('/settings')} style={styles.headerButton}>
               <Ionicons name="settings-outline" size={24} color={theme.colors.text} />
             </TouchableOpacity>
-            <Text style={styles.headerTitle}>Timeline</Text>
-            <View style={styles.headerButton} />
           </>
         )}
       </View>

@@ -9,11 +9,24 @@ import { DocumentCard } from './DocumentCard';
 interface Props {
     trip: Trip;
     documents: Document[];
+    selected: boolean;
+    selectedDocIds: Set<number>;
     onPressDocument: (doc: Document) => void;
+    onLongPressDocument: (id: number) => void;
     onAddDocument: (tripId: number) => void;
+    onLongPress: () => void;
 }
 
-export const TripCard: React.FC<Props> = ({ trip, documents, onPressDocument, onAddDocument }) => {
+export const TripCard: React.FC<Props> = ({
+    trip,
+    documents,
+    selected,
+    selectedDocIds,
+    onPressDocument,
+    onLongPressDocument,
+    onAddDocument,
+    onLongPress
+}) => {
     const [expanded, setExpanded] = useState(false);
 
     const toggleExpand = () => {
@@ -28,8 +41,13 @@ export const TripCard: React.FC<Props> = ({ trip, documents, onPressDocument, on
     return (
         <View style={styles.container}>
             <TouchableOpacity
-                style={[styles.header, expanded && styles.headerExpanded]}
+                style={[
+                    styles.header,
+                    expanded && styles.headerExpanded,
+                    selected && styles.selectedHeader
+                ]}
                 onPress={toggleExpand}
+                onLongPress={onLongPress}
                 activeOpacity={0.7}
             >
                 <View style={styles.iconContainer}>
@@ -57,7 +75,13 @@ export const TripCard: React.FC<Props> = ({ trip, documents, onPressDocument, on
                 <View style={styles.content}>
                     {documents.map((doc) => (
                         <View key={doc.id} style={styles.documentWrapper}>
-                            <DocumentCard doc={doc} onPress={() => onPressDocument(doc)} />
+                            <DocumentCard
+                                doc={doc}
+                                onPress={() => onPressDocument(doc)}
+                                onLongPress={() => onLongPressDocument(doc.id)}
+                                selected={selectedDocIds.has(doc.id)}
+                                processing={doc.processing === 1}
+                            />
                         </View>
                     ))}
 
@@ -93,6 +117,11 @@ const styles = StyleSheet.create({
     headerExpanded: {
         borderBottomWidth: 1,
         borderBottomColor: theme.colors.border,
+    },
+    selectedHeader: {
+        backgroundColor: theme.colors.primary + '15',
+        borderColor: theme.colors.primary,
+        borderWidth: 1,
     },
     iconContainer: {
         width: 40,

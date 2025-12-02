@@ -8,7 +8,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { DocumentCard } from '../../src/components/DocumentCard';
 import { FloatingActionButton } from '../../src/components/FloatingActionButton';
 import { TripCard } from '../../src/components/TripCard';
-import { addDocument, deleteDocument, Document, getDocuments, getTrips, initDatabase, Trip, updateDocument } from '../../src/services/database';
+import { addDocument, deleteDocument, deleteTrip, Document, getDocuments, getTrips, initDatabase, Trip, updateDocument } from '../../src/services/database';
 import { deleteFile, initFileStorage, saveFile } from '../../src/services/fileStorage';
 import { ApiKeyMissingError, parseDocumentWithGemini } from '../../src/services/geminiParser';
 import { theme } from '../../src/theme';
@@ -40,7 +40,7 @@ export default function TimelineScreen() {
   const [loading, setLoading] = useState(false);
   const [processing, setProcessing] = useState(false); // for add/reprocess button state
   const [selectionMode, setSelectionMode] = useState(false);
-  const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
 
   // Initialise DB and storage once
   useEffect(() => {
@@ -220,7 +220,7 @@ export default function TimelineScreen() {
     }
   };
 
-  const toggleSelection = (id: number) => {
+  const toggleSelection = (id: string) => {
     const newSelected = new Set(selectedIds);
     if (newSelected.has(id)) {
       newSelected.delete(id);
@@ -231,37 +231,54 @@ export default function TimelineScreen() {
     setSelectedIds(newSelected);
   };
 
-  const handleLongPress = (id: number) => {
+  const handleLongPress = (type: 'doc' | 'trip', id: number) => {
     setSelectionMode(true);
-    toggleSelection(id);
+    toggleSelection(`${type}-${id}`);
   };
 
   const handlePress = (doc: Document) => {
     if (selectionMode) {
-      toggleSelection(doc.id);
+      toggleSelection(`doc-${doc.id}`);
     } else {
       router.push({ pathname: '/document-view', params: { uri: doc.uri, title: doc.title, id: doc.id } });
     }
   };
 
   const handleDelete = async () => {
-    Alert.alert('Delete Documents', `Are you sure you want to delete ${selectedIds.size} document(s)?`, [
+    Alert.alert('Delete Items', `Are you sure you want to delete ${selectedIds.size} item(s)?`, [
       { text: 'Cancel', style: 'cancel' },
       {
         text: 'Delete',
         style: 'destructive',
         onPress: async () => {
           try {
-            const docsToDelete = allDocuments.filter((d) => selectedIds.has(d.id));
+            const ids = Array.from(selectedIds);
+
+            // Delete Documents
+            const docIds = ids
+              .filter(id => id.startsWith('doc-'))
+              .map(id => Number(id.replace('doc-', '')));
+
+            const docsToDelete = allDocuments.filter((d) => docIds.includes(d.id));
             for (const doc of docsToDelete) {
               await deleteFile(doc.uri);
               deleteDocument(doc.id);
             }
+
+            // Delete Trips
+            const tripIds = ids
+              .filter(id => id.startsWith('trip-'))
+              .map(id => Number(id.replace('trip-', '')));
+
+            for (const tripId of tripIds) {
+              deleteTrip(tripId);
+            }
+
             setSelectionMode(false);
             setSelectedIds(new Set());
             loadDocuments();
           } catch (e) {
-            Alert.alert('Error', 'Failed to delete documents');
+            Alert.alert('Error', 'Failed to delete items');
           }
         },
       },
@@ -271,13 +288,17 @@ export default function TimelineScreen() {
   const handleReprocess = async () => {
     setProcessing(true);
     try {
-      const docsToReprocess = allDocuments.filter((d) => selectedIds.has(d.id));
+      const docIds = Array.from(selectedIds)
+        .filter(id => id.startsWith('doc-'))
+        .map(id => Number(id.replace('doc-', '')));
+
+      const docsToReprocess = allDocuments.filter((d) => docIds.includes(d.id));
       let successCount = 0;
 
       for (const doc of docsToReprocess) {
         try {
           // Mark as processing
-          updateDocument(doc.id, doc.title, doc.docDate, doc.type, doc.owner, 1);
+          updateDocument(doc.id, doc.title, doc.docDate, doc.type, doc.subType, doc.owner, 1, doc.tripId);
           const parsedDataArray = await parseDocumentWithGemini(doc.uri);
 
           // 1. Update the original doc with the first result
@@ -289,7 +310,8 @@ export default function TimelineScreen() {
             firstItem.type,
             firstItem.subType,
             firstItem.owner,
-            0
+            0,
+            doc.tripId
           );
 
           // 2. If multiple items found, create new entries for the rest
@@ -303,7 +325,8 @@ export default function TimelineScreen() {
                 item.type,
                 item.subType,
                 item.owner,
-                0
+                0,
+                doc.tripId
               );
             }
           }
@@ -312,7 +335,7 @@ export default function TimelineScreen() {
         } catch (e) {
           console.error(`Failed to reprocess doc ${doc.id}`, e);
           // Reset processing flag on error
-          updateDocument(doc.id, doc.title, doc.docDate, doc.type, doc.owner, 0);
+          updateDocument(doc.id, doc.title, doc.docDate, doc.type, doc.subType, doc.owner, 0, doc.tripId);
 
           // Check if error is about missing API key
           if (e instanceof ApiKeyMissingError) {
@@ -394,8 +417,16 @@ export default function TimelineScreen() {
                 <TripCard
                   trip={item}
                   documents={item.documents}
+                  selected={selectedIds.has(`trip-${item.id}`)}
+                  selectedDocIds={new Set(
+                    Array.from(selectedIds)
+                      .filter(id => id.startsWith('doc-'))
+                      .map(id => Number(id.replace('doc-', '')))
+                  )}
                   onPressDocument={handlePress}
+                  onLongPressDocument={(id) => handleLongPress('doc', id)}
                   onAddDocument={handleAddDocument}
+                  onLongPress={() => handleLongPress('trip', item.id)}
                 />
               );
             }
@@ -403,10 +434,10 @@ export default function TimelineScreen() {
             return (
               <DocumentCard
                 doc={item}
-                selected={selectedIds.has(item.id)}
+                selected={selectedIds.has(`doc-${item.id}`)}
                 processing={item.processing === 1}
                 onPress={() => handlePress(item)}
-                onLongPress={() => handleLongPress(item.id)}
+                onLongPress={() => handleLongPress('doc', item.id)}
               />
             );
           }}

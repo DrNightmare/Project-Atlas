@@ -7,7 +7,7 @@ import { ActivityIndicator, Alert, FlatList, Platform, StyleSheet, Text, ToastAn
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { FloatingActionButton } from '../../src/components/FloatingActionButton';
 import { IdentityDocumentCard } from '../../src/components/IdentityDocumentCard';
-import { addIdentityDocument, getIdentityDocuments, IdentityDocument, initDatabase } from '../../src/services/database';
+import { addIdentityDocument, getIdentityDocuments, IdentityDocument, initDatabase, updateIdentityDocument } from '../../src/services/database';
 import { saveFile } from '../../src/services/fileStorage';
 import { ApiKeyMissingError } from '../../src/services/geminiParser';
 import { parseIdentityDocumentWithGemini } from '../../src/services/identityParser';
@@ -67,37 +67,55 @@ export default function IdentityScreen() {
             // 2. Save file
             const savedUri = await saveFile(file.uri, file.name);
 
-            // 3. Parse with Gemini
+            // 3. Add placeholder with processing = 1
+            const docId = addIdentityDocument(
+                savedUri,
+                file.name,
+                'Other', // Default type
+                undefined,
+                undefined,
+                undefined,
+                undefined,
+                1 // processing = true
+            );
+
+            loadDocuments();
+            showToast('Document added, processing...');
+            setProcessing(false); // Enable button again immediately
+
+            // 4. Parse with Gemini in background
             parseIdentityDocumentWithGemini(savedUri)
                 .then((parsedData) => {
-                    // 4. Save to database
-                    const docId = addIdentityDocument(
-                        savedUri,
+                    // 5. Update with parsed data and processing = 0
+                    updateIdentityDocument(
+                        docId,
                         parsedData.title,
                         parsedData.type,
                         parsedData.documentNumber,
                         parsedData.issueDate,
                         parsedData.expiryDate,
-                        parsedData.owner
+                        parsedData.owner,
+                        0 // processing = false
                     );
 
                     loadDocuments();
-                    showToast('Identity document added successfully');
-                    setProcessing(false);
-
-                    // Navigate to document view
-                    router.push({
-                        pathname: '/identity-view',
-                        params: {
-                            id: docId.toString(),
-                            uri: savedUri,
-                            title: parsedData.title,
-                        },
-                    });
+                    showToast('Document processed successfully');
                 })
                 .catch((e) => {
                     console.error('Parsing failed', e);
-                    setProcessing(false);
+
+                    // Mark as not processing even on failure
+                    updateIdentityDocument(
+                        docId,
+                        file.name,
+                        'Other',
+                        undefined,
+                        undefined,
+                        undefined,
+                        undefined,
+                        0 // processing = false
+                    );
+                    loadDocuments();
 
                     const errorMessage = (e as any)?.message || String(e);
                     if (e instanceof ApiKeyMissingError) {
@@ -113,7 +131,8 @@ export default function IdentityScreen() {
                             ]
                         );
                     } else {
-                        Alert.alert('Parsing Error', errorMessage);
+                        // Silent failure for parsing, just show the file
+                        console.warn('Parsing error:', errorMessage);
                     }
                 });
         } catch (e) {
@@ -136,7 +155,11 @@ export default function IdentityScreen() {
 
     const renderItem = ({ item }: { item: IdentityDocument }) => (
         <View style={styles.gridItem}>
-            <IdentityDocumentCard doc={item} onPress={() => handlePress(item)} />
+            <IdentityDocumentCard
+                doc={item}
+                onPress={() => handlePress(item)}
+                processing={item.processing === 1}
+            />
         </View>
     );
 

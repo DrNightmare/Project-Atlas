@@ -1,16 +1,17 @@
 import { Ionicons } from '@expo/vector-icons';
 import { differenceInMonths, format } from 'date-fns';
 import React from 'react';
-import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { IdentityDocument } from '../services/database';
 import { theme } from '../theme';
 
 interface Props {
     doc: IdentityDocument;
     onPress?: () => void;
+    processing?: boolean;
 }
 
-export const IdentityDocumentCard: React.FC<Props> = ({ doc, onPress }) => {
+export const IdentityDocumentCard: React.FC<Props> = ({ doc, onPress, processing }) => {
     const getIcon = (type: string) => {
         switch (type) {
             case 'Passport': return { name: 'airplane', color: theme.colors.passport };
@@ -85,6 +86,12 @@ export const IdentityDocumentCard: React.FC<Props> = ({ doc, onPress }) => {
                     </View>
                 )}
             </View>
+
+            {processing && (
+                <View style={styles.processingOverlay}>
+                    <ActivityIndicator size="small" color={theme.colors.primary} />
+                </View>
+            )}
         </TouchableOpacity>
     );
 };
@@ -171,5 +178,12 @@ const styles = StyleSheet.create({
         fontSize: 10,
         fontWeight: '600',
         color: theme.colors.textSecondary,
+    },
+    processingOverlay: {
+        ...StyleSheet.absoluteFillObject,
+        backgroundColor: theme.colors.overlay,
+        justifyContent: 'center',
+        alignItems: 'center',
+        borderRadius: theme.borderRadius.m,
     },
 });

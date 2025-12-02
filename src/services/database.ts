@@ -23,7 +23,9 @@ export interface IdentityDocument {
   issueDate?: string;
   expiryDate?: string;
   owner?: string;
+
   createdAt: string;
+  processing: number; // 0 = false, 1 = true
 }
 
 export const initDatabase = () => {
@@ -68,9 +70,14 @@ export const initDatabase = () => {
       issueDate TEXT,
       expiryDate TEXT,
       owner TEXT,
-      createdAt TEXT NOT NULL
+
+      createdAt TEXT NOT NULL,
+      processing INTEGER DEFAULT 0
     );
   `);
+
+  // Migration: add processing column if missing
+  try { db.execSync(`ALTER TABLE identity_documents ADD COLUMN processing INTEGER DEFAULT 0;`); } catch (e) { }
 };
 
 export const addDocument = (
@@ -138,11 +145,13 @@ export const addIdentityDocument = (
   documentNumber?: string,
   issueDate?: string,
   expiryDate?: string,
-  owner?: string
+
+  owner?: string,
+  processing: number = 0
 ) => {
   const createdAt = new Date().toISOString();
   const result = db.runSync(
-    'INSERT INTO identity_documents (uri, title, type, documentNumber, issueDate, expiryDate, owner, createdAt) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+    'INSERT INTO identity_documents (uri, title, type, documentNumber, issueDate, expiryDate, owner, createdAt, processing) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
     uri,
     title,
     type,
@@ -150,7 +159,9 @@ export const addIdentityDocument = (
     issueDate || null,
     expiryDate || null,
     owner || null,
-    createdAt
+
+    createdAt,
+    processing
   );
   return result.lastInsertRowId;
 };
@@ -170,16 +181,19 @@ export const updateIdentityDocument = (
   documentNumber?: string,
   issueDate?: string,
   expiryDate?: string,
-  owner?: string
+
+  owner?: string,
+  processing?: number
 ) => {
   db.runSync(
-    'UPDATE identity_documents SET title = ?, type = ?, documentNumber = ?, issueDate = ?, expiryDate = ?, owner = ? WHERE id = ?',
+    'UPDATE identity_documents SET title = ?, type = ?, documentNumber = ?, issueDate = ?, expiryDate = ?, owner = ?, processing = ? WHERE id = ?',
     title,
     type,
     documentNumber || null,
     issueDate || null,
     expiryDate || null,
     owner || null,
+    processing ?? 0,
     id
   );
 };

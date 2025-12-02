@@ -81,8 +81,12 @@ export const IdentityDocumentCard: React.FC<Props> = ({ doc, onPress, processing
                 )}
 
                 {doc.owner && (
-                    <View style={styles.ownerBadge}>
-                        <Text style={styles.ownerText}>{doc.owner.split(' ')[0]}</Text>
+                    <View style={styles.ownersContainer}>
+                        {doc.owner.split(',').map((owner, index) => (
+                            <View key={index} style={styles.ownerBadge}>
+                                <Text style={styles.ownerText}>{owner.trim()}</Text>
+                            </View>
+                        ))}
                     </View>
                 )}
             </View>
@@ -164,6 +168,12 @@ const styles = StyleSheet.create({
         color: theme.colors.error,
         fontWeight: '600',
     },
+    ownersContainer: {
+        flexDirection: 'row',
+        gap: 4,
+        flexWrap: 'wrap',
+        marginTop: 4,
+    },
     ownerBadge: {
         backgroundColor: theme.colors.background,
         paddingHorizontal: 6,
@@ -171,8 +181,6 @@ const styles = StyleSheet.create({
         borderRadius: 4,
         borderWidth: 1,
         borderColor: theme.colors.border,
-        alignSelf: 'flex-start',
-        marginTop: 4,
     },
     ownerText: {
         fontSize: 10,

@@ -142,7 +142,7 @@ export default function IdentityViewScreen() {
                 editDocumentNumber || undefined,
                 editIssueDate.toISOString(),
                 editExpiryDate.toISOString(),
-                editOwner || undefined
+                editOwner ? editOwner.trim() : undefined
             );
             setDocument({
                 ...document,
@@ -151,7 +151,7 @@ export default function IdentityViewScreen() {
                 documentNumber: editDocumentNumber || undefined,
                 issueDate: editIssueDate.toISOString(),
                 expiryDate: editExpiryDate.toISOString(),
-                owner: editOwner || undefined,
+                owner: editOwner ? editOwner.trim() : undefined,
             });
             setIsEditing(false);
         }
@@ -322,7 +322,7 @@ export default function IdentityViewScreen() {
                                 style={styles.input}
                                 value={editOwner}
                                 onChangeText={setEditOwner}
-                                placeholder="Owner Name (optional)"
+                                placeholder="Owner Name (separate with commas)"
                             />
                         </ScrollView>
 

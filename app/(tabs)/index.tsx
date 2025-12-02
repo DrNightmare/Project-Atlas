@@ -7,7 +7,8 @@ import { ActivityIndicator, Alert, Platform, SectionList, StyleSheet, Text, Toas
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { DocumentCard } from '../../src/components/DocumentCard';
 import { FloatingActionButton } from '../../src/components/FloatingActionButton';
-import { addDocument, deleteDocument, Document, getDocuments, initDatabase, updateDocument } from '../../src/services/database';
+import { TripCard } from '../../src/components/TripCard';
+import { addDocument, deleteDocument, Document, getDocuments, getTrips, initDatabase, Trip, updateDocument } from '../../src/services/database';
 import { deleteFile, initFileStorage, saveFile } from '../../src/services/fileStorage';
 import { ApiKeyMissingError, parseDocumentWithGemini } from '../../src/services/geminiParser';
 import { theme } from '../../src/theme';
@@ -20,9 +21,16 @@ const showToast = (msg: string) => {
   }
 };
 
+interface TripWithDocs extends Trip {
+  documents: Document[];
+  type: 'Trip'; // Discriminator
+}
+
+type TimelineItem = Document | TripWithDocs;
+
 interface Section {
   title: string;
-  data: Document[];
+  data: TimelineItem[];
 }
 
 export default function TimelineScreen() {
@@ -49,23 +57,41 @@ export default function TimelineScreen() {
     setLoading(true);
     try {
       const docs = getDocuments();
+      const trips = getTrips();
       setAllDocuments(docs);
 
+      // Group docs by trip
+      const tripsWithDocs: TripWithDocs[] = trips.map(trip => ({
+        ...trip,
+        documents: docs.filter(d => d.tripId === trip.id),
+        type: 'Trip'
+      }));
+
+      const standaloneDocs = docs.filter(d => !d.tripId);
+
+      const combined: TimelineItem[] = [...tripsWithDocs, ...standaloneDocs];
       const today = startOfDay(new Date());
 
-      const upcoming = docs.filter(d => !isBefore(new Date(d.docDate), today));
-      const past = docs.filter(d => isBefore(new Date(d.docDate), today));
+      const getDate = (item: TimelineItem) => {
+        if ('startDate' in item) return new Date(item.startDate);
+        return new Date(item.docDate);
+      };
 
-      // Sort Upcoming: ASC (Nearest first) - already sorted by DB query
-      // Sort Past: DESC (Newest first) - need to reverse
-      const pastSorted = [...past].reverse();
+      const upcoming = combined.filter(item => !isBefore(getDate(item), today));
+      const past = combined.filter(item => isBefore(getDate(item), today));
+
+      // Sort Upcoming: ASC (Nearest first)
+      upcoming.sort((a, b) => getDate(a).getTime() - getDate(b).getTime());
+
+      // Sort Past: DESC (Newest first)
+      past.sort((a, b) => getDate(b).getTime() - getDate(a).getTime());
 
       const newSections: Section[] = [];
       if (upcoming.length > 0) {
         newSections.push({ title: 'Upcoming', data: upcoming });
       }
-      if (pastSorted.length > 0) {
-        newSections.push({ title: 'Past', data: pastSorted });
+      if (past.length > 0) {
+        newSections.push({ title: 'Past', data: past });
       }
 
       setSections(newSections);
@@ -83,7 +109,7 @@ export default function TimelineScreen() {
     }, [loadDocuments])
   );
 
-  const handleAddDocument = async () => {
+  const handleAddDocument = async (tripId?: number) => {
     try {
       const result = await DocumentPicker.getDocumentAsync({
         type: ['image/*', 'application/pdf'],
@@ -109,7 +135,8 @@ export default function TimelineScreen() {
         placeholderType,
         undefined, // subType unknown yet
         '', // owner unknown yet
-        1 // processing = true
+        1, // processing = true
+        tripId // Optional tripId
       );
       loadDocuments();
       showToast('Document added');
@@ -126,7 +153,8 @@ export default function TimelineScreen() {
             firstItem.type,
             firstItem.subType,
             firstItem.owner,
-            0
+            0,
+            tripId
           );
 
           // 2. If multiple items found, create new entries for the rest
@@ -140,7 +168,8 @@ export default function TimelineScreen() {
                 item.type,
                 item.subType,
                 item.owner,
-                0 // Not processing
+                0, // Not processing
+                tripId
               );
             }
             showToast(`Found ${parsedDataArray.length} items`);
@@ -165,7 +194,7 @@ export default function TimelineScreen() {
         .catch((e) => {
           console.error('Parsing failed', e);
           // Mark as not processing even on failure
-          updateDocument(docId, placeholderTitle, placeholderDate, placeholderType, '', 0);
+          updateDocument(docId, placeholderTitle, placeholderDate, placeholderType, undefined, undefined, 0, tripId);
           loadDocuments();
 
           // Check if error is about missing API key
@@ -340,9 +369,14 @@ export default function TimelineScreen() {
         ) : (
           <>
             <Text style={styles.headerTitle}>Timeline</Text>
-            <TouchableOpacity onPress={() => router.push('/settings')} style={styles.headerButton}>
-              <Ionicons name="settings-outline" size={24} color={theme.colors.text} />
-            </TouchableOpacity>
+            <View style={styles.headerButtons}>
+              <TouchableOpacity onPress={() => router.push('/add-trip')} style={styles.headerButton}>
+                <Ionicons name="map-outline" size={24} color={theme.colors.text} />
+              </TouchableOpacity>
+              <TouchableOpacity onPress={() => router.push('/settings')} style={styles.headerButton}>
+                <Ionicons name="settings-outline" size={24} color={theme.colors.text} />
+              </TouchableOpacity>
+            </View>
           </>
         )}
       </View>
@@ -353,15 +387,29 @@ export default function TimelineScreen() {
         <SectionList
           sections={sections}
           keyExtractor={(item) => item.id.toString()}
-          renderItem={({ item }) => (
-            <DocumentCard
-              doc={item}
-              selected={selectedIds.has(item.id)}
-              processing={item.processing === 1}
-              onPress={() => handlePress(item)}
-              onLongPress={() => handleLongPress(item.id)}
-            />
-          )}
+          renderItem={({ item }) => {
+            if ('startDate' in item) {
+              // It's a Trip
+              return (
+                <TripCard
+                  trip={item}
+                  documents={item.documents}
+                  onPressDocument={handlePress}
+                  onAddDocument={handleAddDocument}
+                />
+              );
+            }
+            // It's a Document
+            return (
+              <DocumentCard
+                doc={item}
+                selected={selectedIds.has(item.id)}
+                processing={item.processing === 1}
+                onPress={() => handlePress(item)}
+                onLongPress={() => handleLongPress(item.id)}
+              />
+            );
+          }}
           renderSectionHeader={({ section: { title } }) => (
             <View style={styles.sectionHeader}>
               <Text style={styles.sectionHeaderText}>{title}</Text>
@@ -381,7 +429,7 @@ export default function TimelineScreen() {
 
       {!selectionMode && (
         <FloatingActionButton
-          onPress={handleAddDocument}
+          onPress={() => handleAddDocument()}
           disabled={processing}
           processing={processing}
         />
@@ -408,6 +456,10 @@ const styles = StyleSheet.create({
   },
   headerButton: {
     padding: theme.spacing.xs,
+    marginLeft: theme.spacing.s,
+  },
+  headerButtons: {
+    flexDirection: 'row',
   },
   selectionActions: {
     flexDirection: 'row',

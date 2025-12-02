@@ -12,6 +12,15 @@ export interface Document {
   owner?: string;
   createdAt: string;
   processing: number; // 0 = false, 1 = true
+  tripId?: number;
+}
+
+export interface Trip {
+  id: number;
+  title: string;
+  startDate: string;
+  endDate: string;
+  createdAt: string;
 }
 
 export interface IdentityDocument {
@@ -49,6 +58,19 @@ export const initDatabase = () => {
   try { db.execSync(`ALTER TABLE documents ADD COLUMN processing INTEGER DEFAULT 0;`); } catch (e) { }
   // Migration: add subType column if missing
   try { db.execSync(`ALTER TABLE documents ADD COLUMN subType TEXT;`); } catch (e) { }
+  // Migration: add tripId column if missing
+  try { db.execSync(`ALTER TABLE documents ADD COLUMN tripId INTEGER;`); } catch (e) { }
+
+  // Create trips table
+  db.execSync(`
+    CREATE TABLE IF NOT EXISTS trips (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      title TEXT NOT NULL,
+      startDate TEXT NOT NULL,
+      endDate TEXT NOT NULL,
+      createdAt TEXT NOT NULL
+    );
+  `);
 
   // Data Migration: Update old types to new categories
   try {
@@ -87,11 +109,12 @@ export const addDocument = (
   type: string,
   subType?: string,
   owner?: string,
-  processing: number = 0
+  processing: number = 0,
+  tripId?: number
 ) => {
   const createdAt = new Date().toISOString();
   const result = db.runSync(
-    'INSERT INTO documents (uri, title, docDate, type, subType, owner, createdAt, processing) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+    'INSERT INTO documents (uri, title, docDate, type, subType, owner, createdAt, processing, tripId) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
     uri,
     title,
     docDate,
@@ -99,7 +122,8 @@ export const addDocument = (
     subType || null,
     owner || null,
     createdAt,
-    processing
+    processing,
+    tripId || null
   );
   return result.lastInsertRowId;
 };
@@ -123,16 +147,18 @@ export const updateDocument = (
   type: string,
   subType?: string,
   owner?: string,
-  processing?: number
+  processing?: number,
+  tripId?: number
 ) => {
   db.runSync(
-    'UPDATE documents SET title = ?, docDate = ?, type = ?, subType = ?, owner = ?, processing = ? WHERE id = ?',
+    'UPDATE documents SET title = ?, docDate = ?, type = ?, subType = ?, owner = ?, processing = ?, tripId = ? WHERE id = ?',
     title,
     docDate,
     type,
     subType || null,
     owner || null,
     processing ?? 0,
+    tripId || null,
     id
   );
 };
@@ -200,4 +226,55 @@ export const updateIdentityDocument = (
 
 export const deleteIdentityDocument = (id: number) => {
   db.runSync('DELETE FROM identity_documents WHERE id = ?', id);
+};
+
+// Trips CRUD
+export const addTrip = (
+  title: string,
+  startDate: string,
+  endDate: string
+) => {
+  const createdAt = new Date().toISOString();
+  const result = db.runSync(
+    'INSERT INTO trips (title, startDate, endDate, createdAt) VALUES (?, ?, ?, ?)',
+    title,
+    startDate,
+    endDate,
+    createdAt
+  );
+  return result.lastInsertRowId;
+};
+
+export const getTrips = (): Trip[] => {
+  return db.getAllSync<Trip>('SELECT * FROM trips ORDER BY startDate DESC');
+};
+
+export const getTripById = (id: number): Trip | null => {
+  return db.getFirstSync<Trip>('SELECT * FROM trips WHERE id = ?', id);
+};
+
+export const updateTrip = (
+  id: number,
+  title: string,
+  startDate: string,
+  endDate: string
+) => {
+  db.runSync(
+    'UPDATE trips SET title = ?, startDate = ?, endDate = ? WHERE id = ?',
+    title,
+    startDate,
+    endDate,
+    id
+  );
+};
+
+export const deleteTrip = (id: number) => {
+  // Optional: Set tripId to null for documents in this trip? Or delete them?
+  // For now, let's just unlink them (set tripId to null)
+  db.runSync('UPDATE documents SET tripId = NULL WHERE tripId = ?', id);
+  db.runSync('DELETE FROM trips WHERE id = ?', id);
+};
+
+export const getDocumentsByTripId = (tripId: number): Document[] => {
+  return db.getAllSync<Document>('SELECT * FROM documents WHERE tripId = ? ORDER BY docDate ASC', tripId);
 };

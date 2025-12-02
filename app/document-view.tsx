@@ -24,7 +24,7 @@ import Animated, {
     withTiming,
 } from 'react-native-reanimated';
 import { WebView } from 'react-native-webview';
-import { Document, getDocumentById, updateDocument } from '../src/services/database';
+import { Document, getDocumentById, getTrips, Trip, updateDocument } from '../src/services/database';
 import { theme } from '../src/theme';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
@@ -46,11 +46,13 @@ export default function DocumentViewScreen() {
     const [document, setDocument] = useState<Document | null>(null);
     const [isEditing, setIsEditing] = useState(false);
     const [missingFieldsList, setMissingFieldsList] = useState<string[]>([]);
+    const [trips, setTrips] = useState<Trip[]>([]);
 
     // Edit State
     const [editTitle, setEditTitle] = useState('');
     const [editType, setEditType] = useState('');
     const [editOwner, setEditOwner] = useState('');
+    const [editTripId, setEditTripId] = useState<number | undefined>(undefined);
     const [editDate, setEditDate] = useState(new Date());
     const [showDatePicker, setShowDatePicker] = useState(false);
     const [showTimePicker, setShowTimePicker] = useState(false);
@@ -69,7 +71,9 @@ export default function DocumentViewScreen() {
                 setDocument(doc);
                 setEditTitle(doc.title);
                 setEditType(doc.type);
+                setEditType(doc.type);
                 setEditOwner(doc.owner || '');
+                setEditTripId(doc.tripId);
                 setEditDate(new Date(doc.docDate));
 
                 // Handle Auto-Edit
@@ -87,6 +91,10 @@ export default function DocumentViewScreen() {
             }
         }
     }, [id, autoEdit, missingFields]);
+
+    useEffect(() => {
+        setTrips(getTrips());
+    }, []);
 
     useEffect(() => {
         const loadPdf = async () => {
@@ -173,8 +181,10 @@ export default function DocumentViewScreen() {
                 editTitle,
                 editDate.toISOString(),
                 editType,
+                document.subType,
                 editOwner,
-                document.processing
+                document.processing,
+                editTripId
             );
             // Update local state to reflect changes immediately
             setDocument({
@@ -182,7 +192,8 @@ export default function DocumentViewScreen() {
                 title: editTitle,
                 docDate: editDate.toISOString(),
                 type: editType as any,
-                owner: editOwner
+                owner: editOwner,
+                tripId: editTripId
             });
             setIsEditing(false);
             // Clear missing fields warnings after save
@@ -410,6 +421,41 @@ export default function DocumentViewScreen() {
                                 ))}
                             </View>
 
+                            <Text style={styles.label}>Trip</Text>
+                            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.tripScroll}>
+                                <TouchableOpacity
+                                    style={[
+                                        styles.typeButton,
+                                        !editTripId && styles.typeButtonActive
+                                    ]}
+                                    onPress={() => setEditTripId(undefined)}
+                                >
+                                    <Text style={[
+                                        styles.typeButtonText,
+                                        !editTripId && styles.typeButtonTextActive
+                                    ]}>
+                                        None
+                                    </Text>
+                                </TouchableOpacity>
+                                {trips.map((trip) => (
+                                    <TouchableOpacity
+                                        key={trip.id}
+                                        style={[
+                                            styles.typeButton,
+                                            editTripId === trip.id && styles.typeButtonActive
+                                        ]}
+                                        onPress={() => setEditTripId(trip.id)}
+                                    >
+                                        <Text style={[
+                                            styles.typeButtonText,
+                                            editTripId === trip.id && styles.typeButtonTextActive
+                                        ]}>
+                                            {trip.title}
+                                        </Text>
+                                    </TouchableOpacity>
+                                ))}
+                            </ScrollView>
+
                             <Text style={styles.label}>Owner</Text>
                             <TextInput
                                 style={[
@@ -553,6 +599,10 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         flexWrap: 'wrap',
         gap: 8,
+    },
+    tripScroll: {
+        flexDirection: 'row',
+        marginBottom: 8,
     },
     typeButton: {
         paddingVertical: 8,

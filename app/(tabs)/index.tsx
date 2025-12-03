@@ -286,29 +286,56 @@ export default function TimelineScreen() {
   };
 
   const handleEdit = () => {
-    // Only allow editing a single trip at a time
+    // Get selected trip and document IDs
     const tripIds = Array.from(selectedIds)
       .filter(id => id.startsWith('trip-'))
       .map(id => Number(id.replace('trip-', '')));
 
-    if (tripIds.length !== 1) {
-      Alert.alert('Edit Trip', 'Please select exactly one trip to edit.');
+    const docIds = Array.from(selectedIds)
+      .filter(id => id.startsWith('doc-'))
+      .map(id => Number(id.replace('doc-', '')));
+
+    // Only allow editing one item at a time
+    if (tripIds.length + docIds.length !== 1) {
+      Alert.alert('Edit', 'Please select exactly one item to edit.');
       return;
     }
 
-    const trip = getTripById(tripIds[0]);
-    if (trip) {
-      router.push({
-        pathname: '/edit-trip',
-        params: {
-          id: trip.id.toString(),
-          title: trip.title,
-          startDate: trip.startDate,
-          endDate: trip.endDate,
-        },
-      });
-      setSelectionMode(false);
-      setSelectedIds(new Set());
+    // Handle trip editing
+    if (tripIds.length === 1) {
+      const trip = getTripById(tripIds[0]);
+      if (trip) {
+        router.push({
+          pathname: '/edit-trip',
+          params: {
+            id: trip.id.toString(),
+            title: trip.title,
+            startDate: trip.startDate,
+            endDate: trip.endDate,
+          },
+        });
+        setSelectionMode(false);
+        setSelectedIds(new Set());
+      }
+      return;
+    }
+
+    // Handle document editing
+    if (docIds.length === 1) {
+      const doc = allDocuments.find(d => d.id === docIds[0]);
+      if (doc) {
+        router.push({
+          pathname: '/document-view',
+          params: {
+            uri: doc.uri,
+            title: doc.title,
+            id: doc.id.toString(),
+            autoEdit: 'true',
+          },
+        });
+        setSelectionMode(false);
+        setSelectedIds(new Set());
+      }
     }
   };
 

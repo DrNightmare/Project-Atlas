@@ -8,7 +8,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { DocumentCard } from '../../src/components/DocumentCard';
 import { FloatingActionButton } from '../../src/components/FloatingActionButton';
 import { TripCard } from '../../src/components/TripCard';
-import { addDocument, deleteDocument, deleteTrip, Document, getDocuments, getTrips, initDatabase, Trip, updateDocument } from '../../src/services/database';
+import { addDocument, deleteDocument, deleteTrip, Document, getDocuments, getTripById, getTrips, initDatabase, Trip, updateDocument } from '../../src/services/database';
 import { deleteFile, initFileStorage, saveFile } from '../../src/services/fileStorage';
 import { ApiKeyMissingError, parseDocumentWithGemini } from '../../src/services/geminiParser';
 import { theme } from '../../src/theme';
@@ -285,6 +285,33 @@ export default function TimelineScreen() {
     ]);
   };
 
+  const handleEdit = () => {
+    // Only allow editing a single trip at a time
+    const tripIds = Array.from(selectedIds)
+      .filter(id => id.startsWith('trip-'))
+      .map(id => Number(id.replace('trip-', '')));
+
+    if (tripIds.length !== 1) {
+      Alert.alert('Edit Trip', 'Please select exactly one trip to edit.');
+      return;
+    }
+
+    const trip = getTripById(tripIds[0]);
+    if (trip) {
+      router.push({
+        pathname: '/edit-trip',
+        params: {
+          id: trip.id.toString(),
+          title: trip.title,
+          startDate: trip.startDate,
+          endDate: trip.endDate,
+        },
+      });
+      setSelectionMode(false);
+      setSelectedIds(new Set());
+    }
+  };
+
   const handleReprocess = async () => {
     setProcessing(true);
     try {
@@ -381,6 +408,9 @@ export default function TimelineScreen() {
               <Ionicons name="close" size={24} color={theme.colors.text} />
             </TouchableOpacity>
             <View style={styles.selectionActions}>
+              <TouchableOpacity onPress={handleEdit} style={styles.actionButton}>
+                <Ionicons name="pencil" size={24} color={theme.colors.primary} />
+              </TouchableOpacity>
               <TouchableOpacity onPress={handleReprocess} style={styles.actionButton}>
                 <Ionicons name="refresh" size={24} color={theme.colors.primary} />
               </TouchableOpacity>

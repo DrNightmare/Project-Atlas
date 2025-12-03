@@ -1,20 +1,31 @@
 import { Ionicons } from '@expo/vector-icons';
-import { useRouter } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import React from 'react';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { TripForm } from '../src/components/TripForm';
-import { addTrip } from '../src/services/database';
+import { updateTrip } from '../src/services/database';
 import { theme } from '../src/theme';
 
-export default function AddTripScreen() {
+export default function EditTripScreen() {
     const router = useRouter();
+    const { id, title, startDate, endDate } = useLocalSearchParams<{
+        id: string;
+        title: string;
+        startDate: string;
+        endDate: string;
+    }>();
 
-    const handleSave = (title: string, startDate: Date, endDate: Date) => {
-        addTrip(
-            title,
-            startDate.toISOString(),
-            endDate.toISOString()
+    // Parse dates with fallback to current date if invalid
+    const parsedStartDate = startDate ? new Date(startDate) : new Date();
+    const parsedEndDate = endDate ? new Date(endDate) : new Date();
+
+    const handleSave = (newTitle: string, newStartDate: Date, newEndDate: Date) => {
+        updateTrip(
+            Number(id),
+            newTitle,
+            newStartDate.toISOString(),
+            newEndDate.toISOString()
         );
         router.back();
     };
@@ -25,14 +36,17 @@ export default function AddTripScreen() {
                 <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
                     <Ionicons name="arrow-back" size={24} color={theme.colors.text} />
                 </TouchableOpacity>
-                <Text style={styles.headerTitle}>New Trip</Text>
+                <Text style={styles.headerTitle}>Edit Trip</Text>
                 <View style={{ width: 24 }} />
             </View>
 
             <TripForm
+                initialTitle={title}
+                initialStartDate={parsedStartDate}
+                initialEndDate={parsedEndDate}
                 onSave={handleSave}
                 onCancel={() => router.back()}
-                saveButtonText="Create Trip"
+                saveButtonText="Save Changes"
             />
         </SafeAreaView>
     );

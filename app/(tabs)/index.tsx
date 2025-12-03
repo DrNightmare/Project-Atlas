@@ -295,14 +295,14 @@ export default function TimelineScreen() {
       .filter(id => id.startsWith('doc-'))
       .map(id => Number(id.replace('doc-', '')));
 
-    // Only allow editing one item at a time
-    if (tripIds.length + docIds.length !== 1) {
-      Alert.alert('Edit', 'Please select exactly one item to edit.');
+    // Don't allow mixed selection
+    if (tripIds.length > 0 && docIds.length > 0) {
+      Alert.alert('Edit', 'Please select only trips or only documents, not both.');
       return;
     }
 
-    // Handle trip editing
-    if (tripIds.length === 1) {
+    // Handle single trip editing
+    if (tripIds.length === 1 && docIds.length === 0) {
       const trip = getTripById(tripIds[0]);
       if (trip) {
         router.push({
@@ -320,8 +320,8 @@ export default function TimelineScreen() {
       return;
     }
 
-    // Handle document editing
-    if (docIds.length === 1) {
+    // Handle single document editing
+    if (docIds.length === 1 && tripIds.length === 0) {
       const doc = allDocuments.find(d => d.id === docIds[0]);
       if (doc) {
         router.push({
@@ -336,7 +336,30 @@ export default function TimelineScreen() {
         setSelectionMode(false);
         setSelectedIds(new Set());
       }
+      return;
     }
+
+    // Handle bulk document editing
+    if (docIds.length > 1) {
+      router.push({
+        pathname: '/bulk-edit',
+        params: {
+          docIds: docIds.join(','),
+        },
+      });
+      setSelectionMode(false);
+      setSelectedIds(new Set());
+      return;
+    }
+
+    // Handle multiple trips selected
+    if (tripIds.length > 1) {
+      Alert.alert('Edit', 'Bulk editing trips is not supported. Please select exactly one trip to edit.');
+      return;
+    }
+
+    // No items selected
+    Alert.alert('Edit', 'Please select at least one item to edit.');
   };
 
   const handleReprocess = async () => {

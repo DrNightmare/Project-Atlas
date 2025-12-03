@@ -1,8 +1,6 @@
-import { Ionicons } from '@expo/vector-icons';
-import { useRouter } from 'expo-router';
+import { Stack, useRouter } from 'expo-router';
 import React from 'react';
-import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { StyleSheet, View } from 'react-native';
 import { TripForm } from '../src/components/TripForm';
 import { addTrip } from '../src/services/database';
 import { theme } from '../src/theme';
@@ -20,21 +18,20 @@ export default function AddTripScreen() {
     };
 
     return (
-        <SafeAreaView style={styles.container}>
-            <View style={styles.header}>
-                <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-                    <Ionicons name="arrow-back" size={24} color={theme.colors.text} />
-                </TouchableOpacity>
-                <Text style={styles.headerTitle}>New Trip</Text>
-                <View style={{ width: 24 }} />
-            </View>
+        <View style={styles.container}>
+            <Stack.Screen
+                options={{
+                    title: 'New Trip',
+                    headerBackTitle: 'Back',
+                }}
+            />
 
             <TripForm
                 onSave={handleSave}
                 onCancel={() => router.back()}
                 saveButtonText="Create Trip"
             />
-        </SafeAreaView>
+        </View>
     );
 }
 
@@ -42,21 +39,5 @@ const styles = StyleSheet.create({
     container: {
         flex: 1,
         backgroundColor: theme.colors.background,
-    },
-    header: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        padding: theme.spacing.m,
-        borderBottomWidth: 1,
-        borderBottomColor: theme.colors.border,
-    },
-    backButton: {
-        padding: theme.spacing.s,
-    },
-    headerTitle: {
-        fontSize: 18,
-        fontWeight: '600',
-        color: theme.colors.text,
     },
 });

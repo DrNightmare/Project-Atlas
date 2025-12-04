@@ -81,6 +81,7 @@ export const TripCard: React.FC<Props> = ({
                                 onLongPress={() => onLongPressDocument(doc.id)}
                                 selected={selectedDocIds.has(doc.id)}
                                 processing={doc.processing === 1}
+                                variant="flat"
                             />
                         </View>
                     ))}

@@ -11,9 +11,10 @@ interface Props {
     processing?: boolean; // indicates background processing
     onPress?: () => void;
     onLongPress?: () => void;
+    variant?: 'default' | 'flat';
 }
 
-export const DocumentCard: React.FC<Props> = ({ doc, selected, onPress, onLongPress, processing }) => {
+export const DocumentCard: React.FC<Props> = ({ doc, selected, onPress, onLongPress, processing, variant = 'default' }) => {
     const formatDateTime = () => {
         const date = new Date(doc.docDate);
         const dateStr = format(date, 'MMM d, yyyy');
@@ -51,10 +52,15 @@ export const DocumentCard: React.FC<Props> = ({ doc, selected, onPress, onLongPr
     };
 
     const icon = getIcon(doc.type, doc.subType);
+    const isFlat = variant === 'flat';
 
     return (
         <TouchableOpacity
-            style={[styles.card, selected && styles.selectedCard]}
+            style={[
+                styles.card,
+                isFlat && styles.flatCard,
+                selected && styles.selectedCard
+            ]}
             onPress={onPress}
             onLongPress={onLongPress}
             activeOpacity={0.7}
@@ -107,6 +113,14 @@ const styles = StyleSheet.create({
         borderColor: theme.colors.border,
         alignItems: 'center',
     },
+    flatCard: {
+        backgroundColor: 'transparent',
+        borderWidth: 0,
+        shadowOpacity: 0,
+        elevation: 0,
+        marginBottom: 0,
+        paddingVertical: theme.spacing.s,
+    },
     selectedCard: {
         borderColor: theme.colors.primary,
         backgroundColor: theme.colors.primaryLight + '20', // 20% opacity
@@ -143,17 +157,15 @@ const styles = StyleSheet.create({
         marginBottom: 6,
     },
     ownerBadge: {
-        backgroundColor: theme.colors.background,
-        paddingHorizontal: 6,
-        paddingVertical: 2,
-        borderRadius: 4,
-        borderWidth: 1,
-        borderColor: theme.colors.border,
+        backgroundColor: theme.colors.primary + '15', // Light primary background
+        paddingHorizontal: 8,
+        paddingVertical: 3,
+        borderRadius: 12, // Pill shape
     },
     ownerText: {
-        fontSize: 10,
+        fontSize: 11,
         fontWeight: '600',
-        color: theme.colors.textSecondary,
+        color: theme.colors.primary,
     },
     metaRow: {
         flexDirection: 'row',

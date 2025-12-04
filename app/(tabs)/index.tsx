@@ -626,14 +626,16 @@ const styles = StyleSheet.create({
   sectionHeader: {
     backgroundColor: theme.colors.background,
     paddingVertical: theme.spacing.s,
-    marginTop: theme.spacing.m,
-    marginBottom: theme.spacing.xs,
+    marginTop: theme.spacing.l,
+    marginBottom: theme.spacing.s,
+    paddingHorizontal: theme.spacing.m,
   },
   sectionHeaderText: {
     ...theme.typography.caption,
     fontWeight: '700',
     textTransform: 'uppercase',
     letterSpacing: 1.2,
+    color: theme.colors.textSecondary,
   },
   addTripButton: {
     flexDirection: 'row',
@@ -642,15 +644,13 @@ const styles = StyleSheet.create({
     padding: theme.spacing.m,
     marginHorizontal: theme.spacing.m,
     marginTop: theme.spacing.s,
-    borderWidth: 1,
-    borderColor: theme.colors.primary,
-    borderStyle: 'dashed',
-    borderRadius: theme.borderRadius.m,
+    backgroundColor: theme.colors.primary + '10', // Very light primary bg
+    borderRadius: 100, // Pill shape
     gap: theme.spacing.s,
   },
   addTripButtonText: {
     color: theme.colors.primary,
     fontWeight: '600',
-    fontSize: 14,
+    fontSize: 15,
   },
 });

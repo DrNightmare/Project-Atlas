@@ -11,6 +11,7 @@ import { addIdentityDocument, getIdentityDocuments, IdentityDocument, initDataba
 import { saveFile } from '../../src/services/fileStorage';
 import { ApiKeyMissingError } from '../../src/services/geminiParser';
 import { parseIdentityDocumentWithGemini } from '../../src/services/identityParser';
+import { getAutoParseEnabled } from '../../src/services/settingsStorage';
 import { theme } from '../../src/theme';
 
 const showToast = (msg: string) => {
@@ -63,6 +64,7 @@ export default function IdentityScreen() {
             }
 
             const file = result.assets[0];
+            const autoParseEnabled = await getAutoParseEnabled();
 
             // 2. Save file
             const savedUri = await saveFile(file.uri, file.name);
@@ -76,12 +78,26 @@ export default function IdentityScreen() {
                 undefined,
                 undefined,
                 undefined,
-                1 // processing = true
+                autoParseEnabled ? 1 : 0 // processing = true only if auto-parse is on
             );
 
             loadDocuments();
             showToast('Document added, processing...');
             setProcessing(false); // Enable button again immediately
+
+            if (!autoParseEnabled) {
+                // If auto-parse is disabled, navigate directly to view
+                router.push({
+                    pathname: '/identity-view',
+                    params: {
+                        id: docId.toString(),
+                        uri: savedUri,
+                        title: file.name,
+                        autoEdit: 'true',
+                    },
+                });
+                return;
+            }
 
             // 4. Parse with Gemini in background
             parseIdentityDocumentWithGemini(savedUri)

@@ -1,10 +1,11 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation, useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
-import { ActivityIndicator, Alert, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, Alert, Platform, StyleSheet, Switch, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { deleteApiKey, getApiKey, saveApiKey } from '../src/services/apiKeyStorage';
 import { testApiKey } from '../src/services/geminiParser';
+import { getAutoParseEnabled, setAutoParseEnabled } from '../src/services/settingsStorage';
 import { theme } from '../src/theme';
 
 export default function SettingsScreen() {
@@ -13,6 +14,7 @@ export default function SettingsScreen() {
     const [loading, setLoading] = useState(true);
     const [testing, setTesting] = useState(false);
     const [isVisible, setIsVisible] = useState(false);
+    const [autoParse, setAutoParse] = useState(true);
 
     useEffect(() => {
         loadKey();
@@ -25,7 +27,13 @@ export default function SettingsScreen() {
 
     const loadKey = async () => {
         try {
-            const key = await getApiKey();
+            const [key, autoParseSetting] = await Promise.all([
+                getApiKey(),
+                getAutoParseEnabled()
+            ]);
+
+            setAutoParse(autoParseSetting);
+
             if (key) {
                 setApiKey(key);
             } else if (process.env.EXPO_PUBLIC_GEMINI_API_KEY) {
@@ -35,10 +43,15 @@ export default function SettingsScreen() {
                 await saveApiKey(envKey);
             }
         } catch (e) {
-            console.error('Failed to load key', e);
+            console.error('Failed to load settings', e);
         } finally {
             setLoading(false);
         }
+    };
+
+    const handleToggleAutoParse = async (value: boolean) => {
+        setAutoParse(value);
+        await setAutoParseEnabled(value);
     };
 
     const handleSave = async () => {
@@ -100,46 +113,76 @@ export default function SettingsScreen() {
         <SafeAreaView style={styles.container}>
 
             <View style={styles.content}>
-                <Text style={styles.label}>Gemini API Key</Text>
-                <Text style={styles.description}>
-                    Your API key is stored securely on your device.
-                </Text>
-
-                <View style={styles.inputContainer}>
-                    <TextInput
-                        style={styles.input}
-                        value={apiKey}
-                        onChangeText={setApiKey}
-                        placeholder="Enter API Key"
-                        secureTextEntry={!isVisible}
-                        autoCapitalize="none"
-                    />
-                    <TouchableOpacity onPress={() => setIsVisible(!isVisible)} style={styles.eyeIcon}>
-                        <Ionicons name={isVisible ? "eye-off" : "eye"} size={20} color={theme.colors.textSecondary} />
-                    </TouchableOpacity>
+                <View style={styles.section}>
+                    <View style={styles.row}>
+                        <Text style={styles.label}>Enable Auto-Parsing</Text>
+                        <Switch
+                            value={autoParse}
+                            onValueChange={handleToggleAutoParse}
+                            trackColor={{ false: theme.colors.border, true: theme.colors.primary }}
+                            thumbColor={Platform.OS === 'android' ? '#fff' : ''}
+                        />
+                    </View>
+                    <Text style={styles.description}>
+                        Automatically extract details from documents using Gemini AI.
+                    </Text>
                 </View>
 
-                <View style={styles.actions}>
-                    <TouchableOpacity style={[styles.button, styles.saveButton]} onPress={handleSave}>
-                        <Text style={styles.buttonText}>Save Key</Text>
-                    </TouchableOpacity>
+                <View style={[styles.section, !autoParse && styles.disabledSection]}>
+                    <Text style={styles.label}>Gemini API Key</Text>
+                    <Text style={styles.description}>
+                        Your API key is stored securely on your device.
+                    </Text>
+
+                    <View style={styles.inputContainer}>
+                        <TextInput
+                            style={styles.input}
+                            value={apiKey}
+                            onChangeText={setApiKey}
+                            placeholder="Enter API Key"
+                            secureTextEntry={!isVisible}
+                            autoCapitalize="none"
+                            editable={autoParse}
+                        />
+                        <TouchableOpacity
+                            onPress={() => setIsVisible(!isVisible)}
+                            style={styles.eyeIcon}
+                            disabled={!autoParse}
+                        >
+                            <Ionicons name={isVisible ? "eye-off" : "eye"} size={20} color={theme.colors.textSecondary} />
+                        </TouchableOpacity>
+                    </View>
+
+                    <View style={styles.actions}>
+                        <TouchableOpacity
+                            style={[styles.button, styles.saveButton, !autoParse && styles.buttonDisabled]}
+                            onPress={handleSave}
+                            disabled={!autoParse}
+                        >
+                            <Text style={styles.buttonText}>Save Key</Text>
+                        </TouchableOpacity>
+
+                        <TouchableOpacity
+                            style={[styles.button, styles.testButton, !autoParse && styles.buttonDisabled]}
+                            onPress={handleTest}
+                            disabled={testing || !apiKey || !autoParse}
+                        >
+                            {testing ? (
+                                <ActivityIndicator color="#fff" size="small" />
+                            ) : (
+                                <Text style={styles.buttonText}>Test Key</Text>
+                            )}
+                        </TouchableOpacity>
+                    </View>
 
                     <TouchableOpacity
-                        style={[styles.button, styles.testButton]}
-                        onPress={handleTest}
-                        disabled={testing || !apiKey}
+                        style={[styles.clearButton, !autoParse && styles.clearButtonDisabled]}
+                        onPress={handleClear}
+                        disabled={!autoParse}
                     >
-                        {testing ? (
-                            <ActivityIndicator color="#fff" size="small" />
-                        ) : (
-                            <Text style={styles.buttonText}>Test Key</Text>
-                        )}
+                        <Text style={[styles.clearButtonText, !autoParse && styles.clearButtonTextDisabled]}>Clear API Key & Reset</Text>
                     </TouchableOpacity>
                 </View>
-
-                <TouchableOpacity style={styles.clearButton} onPress={handleClear}>
-                    <Text style={styles.clearButtonText}>Clear API Key & Reset</Text>
-                </TouchableOpacity>
 
                 {process.env.EXPO_PUBLIC_GEMINI_API_KEY && (
                     <View style={styles.infoBox}>
@@ -252,5 +295,26 @@ const styles = StyleSheet.create({
         flex: 1,
         ...theme.typography.small,
         color: theme.colors.primary,
+    },
+    section: {
+        marginBottom: theme.spacing.xl,
+    },
+    row: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        marginBottom: theme.spacing.xs,
+    },
+    disabledSection: {
+        opacity: 0.5,
+    },
+    buttonDisabled: {
+        backgroundColor: theme.colors.textLight,
+    },
+    clearButtonDisabled: {
+        borderColor: theme.colors.border,
+    },
+    clearButtonTextDisabled: {
+        color: theme.colors.textLight,
     }
 });

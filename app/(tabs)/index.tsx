@@ -10,6 +10,7 @@ import { TripCard } from '../../src/components/TripCard';
 import { addDocument, deleteDocument, deleteTrip, Document, getDocuments, getTripById, getTrips, initDatabase, Trip, updateDocument } from '../../src/services/database';
 import { deleteFile, initFileStorage, saveFile } from '../../src/services/fileStorage';
 import { ApiKeyMissingError, parseDocumentWithGemini } from '../../src/services/geminiParser';
+import { getAutoParseEnabled } from '../../src/services/settingsStorage';
 import { theme } from '../../src/theme';
 
 const showToast = (msg: string) => {
@@ -119,6 +120,7 @@ export default function TimelineScreen() {
 
       setProcessing(true);
       const asset = result.assets[0];
+      const autoParseEnabled = await getAutoParseEnabled();
 
       // Save file locally
       const savedUri = await saveFile(asset.uri, asset.name);
@@ -134,11 +136,25 @@ export default function TimelineScreen() {
         placeholderType,
         undefined, // subType unknown yet
         '', // owner unknown yet
-        1, // processing = true
+        autoParseEnabled ? 1 : 0, // processing = true only if auto-parse is on
         tripId // Optional tripId
       );
       loadDocuments();
       showToast('Document added');
+
+      if (!autoParseEnabled) {
+        // If auto-parse is disabled, navigate directly to edit
+        router.push({
+          pathname: '/document-view',
+          params: {
+            uri: savedUri,
+            title: placeholderTitle,
+            id: docId,
+            autoEdit: 'true',
+          }
+        });
+        return;
+      }
 
       // Parse in background
       parseDocumentWithGemini(savedUri)
@@ -362,6 +378,22 @@ export default function TimelineScreen() {
   };
 
   const handleReprocess = async () => {
+    const autoParseEnabled = await getAutoParseEnabled();
+    if (!autoParseEnabled) {
+      Alert.alert(
+        'Auto-Parsing Disabled',
+        'Please enable auto-parsing in Settings to use this feature.',
+        [
+          { text: 'Cancel', style: 'cancel' },
+          {
+            text: 'Go to Settings',
+            onPress: () => router.push('/settings')
+          }
+        ]
+      );
+      return;
+    }
+
     setProcessing(true);
     try {
       const docIds = Array.from(selectedIds)

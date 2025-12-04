@@ -1,7 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import { differenceInMonths, format } from 'date-fns';
 import React from 'react';
-import { ActivityIndicator, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, Platform, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { IdentityDocument } from '../services/database';
 import { theme } from '../theme';
 
@@ -53,14 +53,25 @@ export const IdentityDocumentCard: React.FC<Props> = ({ doc, onPress, processing
                 <Ionicons name={icon.name as any} size={28} color={icon.color} />
             </View>
 
+            {doc.owner && (
+                <View style={styles.topRightBadge}>
+                    {doc.owner.split(',').map((owner, index) => (
+                        <View key={index} style={styles.ownerBadge}>
+                            <Text style={styles.ownerText}>{owner.trim().split(' ')[0]}</Text>
+                        </View>
+                    ))}
+                </View>
+            )}
+
             <View style={styles.info}>
                 <Text style={styles.title} numberOfLines={1}>{doc.title}</Text>
-                <Text style={styles.type}>{doc.type}</Text>
 
                 {doc.documentNumber && (
-                    <Text style={styles.documentNumber} numberOfLines={1}>
-                        {doc.documentNumber}
-                    </Text>
+                    <View style={styles.docNumberContainer}>
+                        <Text style={styles.documentNumber} numberOfLines={1}>
+                            {doc.documentNumber}
+                        </Text>
+                    </View>
                 )}
 
                 {doc.expiryDate && (
@@ -80,15 +91,6 @@ export const IdentityDocumentCard: React.FC<Props> = ({ doc, onPress, processing
                     </View>
                 )}
 
-                {doc.owner && (
-                    <View style={styles.ownersContainer}>
-                        {doc.owner.split(',').map((owner, index) => (
-                            <View key={index} style={styles.ownerBadge}>
-                                <Text style={styles.ownerText}>{owner.trim()}</Text>
-                            </View>
-                        ))}
-                    </View>
-                )}
             </View>
 
             {processing && (
@@ -134,21 +136,23 @@ const styles = StyleSheet.create({
         fontSize: 16,
         fontWeight: '600',
         color: theme.colors.text,
-        marginBottom: 4,
-    },
-    type: {
-        fontSize: 11,
-        color: theme.colors.textLight,
-        fontWeight: '500',
-        textTransform: 'uppercase',
-        letterSpacing: 0.5,
         marginBottom: 8,
+    },
+    docNumberContainer: {
+        backgroundColor: theme.colors.background,
+        paddingHorizontal: 8,
+        paddingVertical: 4,
+        borderRadius: 4,
+        alignSelf: 'flex-start',
+        marginBottom: 8,
+        borderWidth: 1,
+        borderColor: theme.colors.border,
     },
     documentNumber: {
         fontSize: 13,
         color: theme.colors.textSecondary,
-        fontFamily: 'monospace',
-        marginBottom: 8,
+        fontFamily: Platform.OS === 'ios' ? 'Courier' : 'monospace',
+        letterSpacing: 0.5,
     },
     expiryRow: {
         flexDirection: 'row',
@@ -168,24 +172,23 @@ const styles = StyleSheet.create({
         color: theme.colors.error,
         fontWeight: '600',
     },
-    ownersContainer: {
+    topRightBadge: {
+        position: 'absolute',
+        top: theme.spacing.m,
+        right: theme.spacing.m,
         flexDirection: 'row',
         gap: 4,
-        flexWrap: 'wrap',
-        marginTop: 4,
     },
     ownerBadge: {
-        backgroundColor: theme.colors.background,
-        paddingHorizontal: 6,
-        paddingVertical: 2,
-        borderRadius: 4,
-        borderWidth: 1,
-        borderColor: theme.colors.border,
+        backgroundColor: theme.colors.primary + '15', // Light primary background
+        paddingHorizontal: 8,
+        paddingVertical: 3,
+        borderRadius: 12, // Pill shape
     },
     ownerText: {
-        fontSize: 10,
+        fontSize: 11,
         fontWeight: '600',
-        color: theme.colors.textSecondary,
+        color: theme.colors.primary,
     },
     processingOverlay: {
         ...StyleSheet.absoluteFillObject,

@@ -510,15 +510,13 @@ export default function TimelineScreen() {
         )}
       </View>
 
-      {!selectionMode && (
-        <TouchableOpacity
-          style={styles.addTripButton}
-          onPress={() => router.push('/add-trip')}
-        >
-          <Ionicons name="add-circle-outline" size={20} color={theme.colors.primary} />
-          <Text style={styles.addTripButtonText}>Add Trip</Text>
-        </TouchableOpacity>
-      )}
+      <TouchableOpacity
+        style={styles.addTripButton}
+        onPress={() => router.push('/add-trip')}
+      >
+        <Ionicons name="add-circle-outline" size={20} color={theme.colors.primary} />
+        <Text style={styles.addTripButtonText}>Add Trip</Text>
+      </TouchableOpacity>
 
       {loading ? (
         <ActivityIndicator size="large" color={theme.colors.primary} style={styles.loader} />

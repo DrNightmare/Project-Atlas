@@ -1,6 +1,7 @@
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import React from 'react';
-import { StyleSheet, View } from 'react-native';
+import { StyleSheet } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { TripForm } from '../src/components/TripForm';
 import { updateTrip } from '../src/services/database';
 import { theme } from '../src/theme';
@@ -29,7 +30,7 @@ export default function EditTripScreen() {
     };
 
     return (
-        <View style={styles.container}>
+        <SafeAreaView style={styles.container}>
             <Stack.Screen
                 options={{
                     title: 'Edit Trip',
@@ -45,7 +46,7 @@ export default function EditTripScreen() {
                 onCancel={() => router.back()}
                 saveButtonText="Save Changes"
             />
-        </View>
+        </SafeAreaView>
     );
 }
 

@@ -8,6 +8,7 @@ import {
     TouchableOpacity,
     View,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { getDocumentById, getTrips, Trip, updateDocument } from '../src/services/database';
 import { theme } from '../src/theme';
 
@@ -65,7 +66,7 @@ export default function BulkEditScreen() {
     };
 
     return (
-        <View style={styles.container}>
+        <SafeAreaView style={styles.container}>
             <Stack.Screen
                 options={{
                     title: 'Bulk Edit',
@@ -145,7 +146,7 @@ export default function BulkEditScreen() {
                     <Text style={styles.saveButtonText}>Save Changes</Text>
                 </TouchableOpacity>
             </View>
-        </View>
+        </SafeAreaView>
     );
 }
 

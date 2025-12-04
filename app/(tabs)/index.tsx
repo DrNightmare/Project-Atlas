@@ -6,7 +6,6 @@ import React, { useCallback, useEffect, useState } from 'react';
 import { ActivityIndicator, Alert, Platform, SectionList, StyleSheet, Text, ToastAndroid, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { DocumentCard } from '../../src/components/DocumentCard';
-import { FloatingActionButton } from '../../src/components/FloatingActionButton';
 import { TripCard } from '../../src/components/TripCard';
 import { addDocument, deleteDocument, deleteTrip, Document, getDocuments, getTripById, getTrips, initDatabase, Trip, updateDocument } from '../../src/services/database';
 import { deleteFile, initFileStorage, saveFile } from '../../src/services/fileStorage';
@@ -472,17 +471,22 @@ export default function TimelineScreen() {
         ) : (
           <>
             <Text style={styles.headerTitle}>Timeline</Text>
-            <View style={styles.headerButtons}>
-              <TouchableOpacity onPress={() => router.push('/add-trip')} style={styles.headerButton}>
-                <Ionicons name="map-outline" size={24} color={theme.colors.text} />
-              </TouchableOpacity>
-              <TouchableOpacity onPress={() => router.push('/settings')} style={styles.headerButton}>
-                <Ionicons name="settings-outline" size={24} color={theme.colors.text} />
-              </TouchableOpacity>
-            </View>
+            <TouchableOpacity onPress={() => router.push('/settings')} style={styles.headerButton}>
+              <Ionicons name="settings-outline" size={24} color={theme.colors.text} />
+            </TouchableOpacity>
           </>
         )}
       </View>
+
+      {!selectionMode && (
+        <TouchableOpacity
+          style={styles.addTripButton}
+          onPress={() => router.push('/add-trip')}
+        >
+          <Ionicons name="add-circle-outline" size={20} color={theme.colors.primary} />
+          <Text style={styles.addTripButtonText}>Add Trip</Text>
+        </TouchableOpacity>
+      )}
 
       {loading ? (
         <ActivityIndicator size="large" color={theme.colors.primary} style={styles.loader} />
@@ -537,14 +541,6 @@ export default function TimelineScreen() {
           stickySectionHeadersEnabled={false}
         />
       )}
-
-      {!selectionMode && (
-        <FloatingActionButton
-          onPress={() => handleAddDocument()}
-          disabled={processing}
-          processing={processing}
-        />
-      )}
     </SafeAreaView>
   );
 }
@@ -568,9 +564,6 @@ const styles = StyleSheet.create({
   headerButton: {
     padding: theme.spacing.xs,
     marginLeft: theme.spacing.s,
-  },
-  headerButtons: {
-    flexDirection: 'row',
   },
   selectionActions: {
     flexDirection: 'row',
@@ -611,5 +604,23 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     textTransform: 'uppercase',
     letterSpacing: 1.2,
+  },
+  addTripButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: theme.spacing.m,
+    marginHorizontal: theme.spacing.m,
+    marginTop: theme.spacing.s,
+    borderWidth: 1,
+    borderColor: theme.colors.primary,
+    borderStyle: 'dashed',
+    borderRadius: theme.borderRadius.m,
+    gap: theme.spacing.s,
+  },
+  addTripButtonText: {
+    color: theme.colors.primary,
+    fontWeight: '600',
+    fontSize: 14,
   },
 });

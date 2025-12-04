@@ -1,7 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation, useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
-import { ActivityIndicator, Alert, Platform, StyleSheet, Switch, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, Alert, Linking, Platform, StyleSheet, Switch, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { deleteApiKey, getApiKey, saveApiKey } from '../src/services/apiKeyStorage';
 import { testApiKey } from '../src/services/geminiParser';
@@ -129,7 +129,15 @@ export default function SettingsScreen() {
                 </View>
 
                 <View style={[styles.section, !autoParse && styles.disabledSection]}>
-                    <Text style={styles.label}>Gemini API Key</Text>
+                    <View style={styles.labelRow}>
+                        <Text style={styles.label}>Gemini API Key</Text>
+                        <TouchableOpacity
+                            onPress={() => Linking.openURL('https://aistudio.google.com/app/apikey')}
+                            disabled={!autoParse}
+                        >
+                            <Text style={[styles.linkText, !autoParse && styles.disabledText]}>Get free API key →</Text>
+                        </TouchableOpacity>
+                    </View>
                     <Text style={styles.description}>
                         Your API key is stored securely on your device.
                     </Text>
@@ -228,6 +236,21 @@ const styles = StyleSheet.create({
         ...theme.typography.body,
         color: theme.colors.textSecondary,
         marginBottom: theme.spacing.l,
+    },
+    labelRow: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        marginBottom: theme.spacing.xs,
+    },
+    linkText: {
+        fontSize: 14,
+        color: theme.colors.primary,
+        fontWeight: '600',
+    },
+    disabledText: {
+        color: theme.colors.textLight,
+        opacity: 0.5,
     },
     inputContainer: {
         flexDirection: 'row',

@@ -24,7 +24,7 @@ const showToast = (msg: string) => {
 
 export default function IdentityScreen() {
     const router = useRouter();
-    const { pickDocument } = useDocumentPicker();
+    const { pickDocument, PickerModal } = useDocumentPicker();
     const [documents, setDocuments] = useState<IdentityDocument[]>([]);
     const [loading, setLoading] = useState(false);
     const [processing, setProcessing] = useState(false);
@@ -206,6 +206,8 @@ export default function IdentityScreen() {
                 disabled={processing}
                 processing={processing}
             />
+
+            <PickerModal />
         </SafeAreaView>
     );
 }

@@ -35,7 +35,7 @@ interface Section {
 
 export default function TimelineScreen() {
   const router = useRouter();
-  const { pickDocument } = useDocumentPicker();
+  const { pickDocument, PickerModal } = useDocumentPicker();
   const [sections, setSections] = useState<Section[]>([]);
   const [allDocuments, setAllDocuments] = useState<Document[]>([]); // Keep track for selection logic
   const [loading, setLoading] = useState(false);
@@ -567,6 +567,8 @@ export default function TimelineScreen() {
           stickySectionHeadersEnabled={false}
         />
       )}
+
+      <PickerModal />
     </SafeAreaView>
   );
 }

@@ -1,12 +1,12 @@
 import { Ionicons } from '@expo/vector-icons';
 import { isBefore, startOfDay } from 'date-fns';
-import * as DocumentPicker from 'expo-document-picker';
 import { useFocusEffect, useRouter } from 'expo-router';
 import React, { useCallback, useEffect, useState } from 'react';
 import { ActivityIndicator, Alert, Platform, SectionList, StyleSheet, Text, ToastAndroid, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { DocumentCard } from '../../src/components/DocumentCard';
 import { TripCard } from '../../src/components/TripCard';
+import { useDocumentPicker } from '../../src/hooks/useDocumentPicker';
 import { addDocument, deleteDocument, deleteTrip, Document, getDocuments, getTripById, getTrips, initDatabase, Trip, updateDocument } from '../../src/services/database';
 import { deleteFile, initFileStorage, saveFile } from '../../src/services/fileStorage';
 import { ApiKeyMissingError, parseDocumentWithGemini } from '../../src/services/geminiParser';
@@ -35,6 +35,7 @@ interface Section {
 
 export default function TimelineScreen() {
   const router = useRouter();
+  const { pickDocument } = useDocumentPicker();
   const [sections, setSections] = useState<Section[]>([]);
   const [allDocuments, setAllDocuments] = useState<Document[]>([]); // Keep track for selection logic
   const [loading, setLoading] = useState(false);
@@ -111,24 +112,19 @@ export default function TimelineScreen() {
 
   const handleAddDocument = async (tripId?: number) => {
     try {
-      const result = await DocumentPicker.getDocumentAsync({
-        type: ['image/*', 'application/pdf'],
-        copyToCacheDirectory: true,
-      });
-
-      if (result.canceled) return;
+      const result = await pickDocument();
+      if (!result) return; // User cancelled
 
       setProcessing(true);
-      const asset = result.assets[0];
       const autoParseEnabled = await getAutoParseEnabled();
 
       // Save file locally
-      const savedUri = await saveFile(asset.uri, asset.name);
+      const savedUri = await saveFile(result.uri, result.name);
 
       // Insert placeholder with processing flag
-      const placeholderTitle = asset.name || 'Untitled';
+      const placeholderTitle = result.name || 'Untitled';
       const placeholderDate = new Date().toISOString();
-      const placeholderType = asset.mimeType?.includes('pdf') ? 'PDF' : 'Image';
+      const placeholderType = result.mimeType?.includes('pdf') ? 'PDF' : 'Image';
       const docId = addDocument(
         savedUri,
         placeholderTitle,

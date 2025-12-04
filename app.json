@@ -42,7 +42,14 @@
         }
       ],
       "expo-sqlite",
-      "expo-secure-store"
+      "expo-secure-store",
+      [
+        "expo-image-picker",
+        {
+          "cameraPermission": "Allow Atlas to access your camera to scan documents.",
+          "photosPermission": "Allow Atlas to access your photos to select documents."
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true,

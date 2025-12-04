@@ -1,12 +1,12 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
-import * as DocumentPicker from 'expo-document-picker';
 import { useRouter } from 'expo-router';
 import React, { useCallback, useState } from 'react';
 import { ActivityIndicator, Alert, FlatList, Platform, StyleSheet, Text, ToastAndroid, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { FloatingActionButton } from '../../src/components/FloatingActionButton';
 import { IdentityDocumentCard } from '../../src/components/IdentityDocumentCard';
+import { useDocumentPicker } from '../../src/hooks/useDocumentPicker';
 import { addIdentityDocument, getIdentityDocuments, IdentityDocument, initDatabase, updateIdentityDocument } from '../../src/services/database';
 import { saveFile } from '../../src/services/fileStorage';
 import { ApiKeyMissingError } from '../../src/services/geminiParser';
@@ -24,6 +24,7 @@ const showToast = (msg: string) => {
 
 export default function IdentityScreen() {
     const router = useRouter();
+    const { pickDocument } = useDocumentPicker();
     const [documents, setDocuments] = useState<IdentityDocument[]>([]);
     const [loading, setLoading] = useState(false);
     const [processing, setProcessing] = useState(false);
@@ -53,26 +54,21 @@ export default function IdentityScreen() {
             setProcessing(true);
 
             // 1. Pick document
-            const result = await DocumentPicker.getDocumentAsync({
-                type: ['image/*', 'application/pdf'],
-                copyToCacheDirectory: true,
-            });
-
-            if (result.canceled) {
+            const result = await pickDocument();
+            if (!result) {
                 setProcessing(false);
                 return;
             }
 
-            const file = result.assets[0];
             const autoParseEnabled = await getAutoParseEnabled();
 
             // 2. Save file
-            const savedUri = await saveFile(file.uri, file.name);
+            const savedUri = await saveFile(result.uri, result.name);
 
             // 3. Add placeholder with processing = 1
             const docId = addIdentityDocument(
                 savedUri,
-                file.name,
+                result.name,
                 'Other', // Default type
                 undefined,
                 undefined,
@@ -92,7 +88,7 @@ export default function IdentityScreen() {
                     params: {
                         id: docId.toString(),
                         uri: savedUri,
-                        title: file.name,
+                        title: result.name,
                         autoEdit: 'true',
                     },
                 });
@@ -123,7 +119,7 @@ export default function IdentityScreen() {
                     // Mark as not processing even on failure
                     updateIdentityDocument(
                         docId,
-                        file.name,
+                        result.name,
                         'Other',
                         undefined,
                         undefined,

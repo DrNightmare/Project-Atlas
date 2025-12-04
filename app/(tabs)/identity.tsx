@@ -2,7 +2,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
 import { useRouter } from 'expo-router';
 import React, { useCallback, useState } from 'react';
-import { ActivityIndicator, Alert, FlatList, Platform, StyleSheet, Text, ToastAndroid, View } from 'react-native';
+import { ActivityIndicator, Alert, FlatList, Platform, StyleSheet, Text, ToastAndroid, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { FloatingActionButton } from '../../src/components/FloatingActionButton';
 import { IdentityDocumentCard } from '../../src/components/IdentityDocumentCard';
@@ -179,6 +179,9 @@ export default function IdentityScreen() {
         <SafeAreaView style={styles.container}>
             <View style={styles.header}>
                 <Text style={styles.headerTitle}>Identity</Text>
+                <TouchableOpacity onPress={() => router.push('/settings')} style={styles.headerButton}>
+                    <Ionicons name="settings-outline" size={24} color={theme.colors.text} />
+                </TouchableOpacity>
             </View>
 
             {loading ? (

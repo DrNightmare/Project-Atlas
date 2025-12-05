@@ -145,7 +145,6 @@ export default function TimelineScreen() {
         tripId // Optional tripId
       );
       loadDocuments();
-      showToast('Document added');
 
       if (!autoParseEnabled) {
         // If auto-parse is disabled, navigate directly to edit

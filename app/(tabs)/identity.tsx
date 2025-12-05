@@ -78,7 +78,6 @@ export default function IdentityScreen() {
             );
 
             loadDocuments();
-            showToast('Document added, processing...');
             setProcessing(false); // Enable button again immediately
 
             if (!autoParseEnabled) {
@@ -111,7 +110,6 @@ export default function IdentityScreen() {
                     );
 
                     loadDocuments();
-                    showToast('Document processed successfully');
                 })
                 .catch((e) => {
                     console.error('Parsing failed', e);

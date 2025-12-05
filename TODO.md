@@ -15,7 +15,7 @@
 
 ## UI/UX Improvements
 - [ ] Add a destination picker UI.
-- [ ] Remove unnecessary modals.
+- [x] Remove unnecessary toasts.
 - [ ] Add requirement checks for each card.
 - [ ] Detect and highlight gaps in the timeline.
 - [ ] Add animations and improved loaders.

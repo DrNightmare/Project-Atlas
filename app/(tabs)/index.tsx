@@ -8,6 +8,7 @@ import { DocumentCard } from '../../src/components/DocumentCard';
 import { TripCard } from '../../src/components/TripCard';
 import { useDocumentPicker } from '../../src/hooks/useDocumentPicker';
 import { addDocument, deleteDocument, deleteTrip, Document, getDocuments, getTripById, getTrips, initDatabase, Trip, updateDocument } from '../../src/services/database';
+import { documentsChanged } from '../../src/services/events';
 import { deleteFile, initFileStorage, saveFile } from '../../src/services/fileStorage';
 import { ApiKeyMissingError, parseDocumentWithGemini } from '../../src/services/geminiParser';
 import { getAutoParseEnabled } from '../../src/services/settingsStorage';
@@ -109,6 +110,14 @@ export default function TimelineScreen() {
       loadDocuments();
     }, [loadDocuments])
   );
+
+  // Listen for DB changes from Share Intent
+  useEffect(() => {
+    const unsubscribe = documentsChanged.subscribe(() => {
+      loadDocuments();
+    });
+    return () => { unsubscribe() };
+  }, [loadDocuments]);
 
   const handleAddDocument = async (tripId?: number) => {
     try {

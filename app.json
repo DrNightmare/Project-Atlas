@@ -49,6 +49,9 @@
           "cameraPermission": "Allow Atlas to access your camera to scan documents.",
           "photosPermission": "Allow Atlas to access your photos to select documents."
         }
+      ],
+      [
+        "./modules/share-intent/plugin/withShareIntent.js"
       ]
     ],
     "experiments": {

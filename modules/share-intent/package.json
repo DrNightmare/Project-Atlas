@@ -1,0 +1,13 @@
+{
+    "name": "share-intent",
+    "version": "1.0.0",
+    "description": "Local Expo module for handling Share Intents",
+    "main": "index.ts",
+    "keywords": [
+        "react-native",
+        "expo",
+        "share-intent"
+    ],
+    "author": "DrNightmare",
+    "license": "MIT"
+}

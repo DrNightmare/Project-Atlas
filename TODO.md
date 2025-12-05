@@ -4,8 +4,8 @@
 - [ ] Add biometric lock support.
 
 ## Document Management
-- [x] Implement share intent for documents.
-- [ ] Fix share intent not working if app is already open.
+- [x] Implement share intent for documents (with trampoline).
+- [x] Fix share intent not working if app is already open.
 - [ ] Parse destinations from documents and store them.
 - [ ] Enable automatic trip tagging on upload.
 - [ ] Reject unrelated or random documents.

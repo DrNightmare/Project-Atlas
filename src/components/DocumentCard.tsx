@@ -1,9 +1,9 @@
 import { Ionicons } from '@expo/vector-icons';
 import { format } from 'date-fns';
-import React from 'react';
+import React, { useMemo } from 'react';
 import { ActivityIndicator, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { useAppTheme } from '../context/ThemeContext';
 import { Document } from '../services/database';
-import { theme } from '../theme';
 
 interface Props {
     doc: Document;
@@ -15,6 +15,9 @@ interface Props {
 }
 
 export const DocumentCard: React.FC<Props> = ({ doc, selected, onPress, onLongPress, processing, variant = 'default' }) => {
+    const theme = useAppTheme();
+    const styles = useMemo(() => createStyles(theme), [theme]);
+
     const formatDateTime = () => {
         const date = new Date(doc.docDate);
         const dateStr = format(date, 'MMM d, yyyy');
@@ -101,7 +104,7 @@ export const DocumentCard: React.FC<Props> = ({ doc, selected, onPress, onLongPr
     );
 };
 
-const styles = StyleSheet.create({
+const createStyles = (theme: any) => StyleSheet.create({
     card: {
         flexDirection: 'row',
         backgroundColor: theme.colors.card,
@@ -123,7 +126,7 @@ const styles = StyleSheet.create({
     },
     selectedCard: {
         borderColor: theme.colors.primary,
-        backgroundColor: theme.colors.primaryLight + '20', // 20% opacity
+        backgroundColor: theme.colors.primaryLight, // 20% opacity managed in palette or use util
     },
     iconContainer: {
         width: 48,
@@ -157,7 +160,7 @@ const styles = StyleSheet.create({
         marginBottom: 6,
     },
     ownerBadge: {
-        backgroundColor: theme.colors.primary + '15', // Light primary background
+        backgroundColor: theme.colors.primaryLight, // Light primary background
         paddingHorizontal: 8,
         paddingVertical: 3,
         borderRadius: 12, // Pill shape

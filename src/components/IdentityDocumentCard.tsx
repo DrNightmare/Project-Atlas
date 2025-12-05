@@ -1,9 +1,9 @@
 import { Ionicons } from '@expo/vector-icons';
 import { differenceInMonths, format } from 'date-fns';
-import React from 'react';
+import React, { useMemo } from 'react';
 import { ActivityIndicator, Platform, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { useAppTheme } from '../context/ThemeContext';
 import { IdentityDocument } from '../services/database';
-import { theme } from '../theme';
 
 interface Props {
     doc: IdentityDocument;
@@ -12,6 +12,9 @@ interface Props {
 }
 
 export const IdentityDocumentCard: React.FC<Props> = ({ doc, onPress, processing }) => {
+    const theme = useAppTheme();
+    const styles = useMemo(() => createStyles(theme), [theme]);
+
     const getIcon = (type: string) => {
         switch (type) {
             case 'Passport': return { name: 'airplane', color: theme.colors.passport };
@@ -102,7 +105,7 @@ export const IdentityDocumentCard: React.FC<Props> = ({ doc, onPress, processing
     );
 };
 
-const styles = StyleSheet.create({
+const createStyles = (theme: any) => StyleSheet.create({
     card: {
         backgroundColor: theme.colors.card,
         borderRadius: theme.borderRadius.m,
@@ -180,7 +183,7 @@ const styles = StyleSheet.create({
         gap: 4,
     },
     ownerBadge: {
-        backgroundColor: theme.colors.primary + '15', // Light primary background
+        backgroundColor: theme.colors.primaryContainer,
         paddingHorizontal: 8,
         paddingVertical: 3,
         borderRadius: 12, // Pill shape

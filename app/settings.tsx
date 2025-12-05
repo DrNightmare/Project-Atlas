@@ -1,20 +1,24 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation, useRouter } from 'expo-router';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, Alert, Linking, Platform, StyleSheet, Switch, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useAppTheme, useThemeSettings } from '../src/context/ThemeContext';
 import { deleteApiKey, getApiKey, saveApiKey } from '../src/services/apiKeyStorage';
 import { testApiKey } from '../src/services/geminiParser';
-import { getAutoParseEnabled, setAutoParseEnabled } from '../src/services/settingsStorage';
-import { theme } from '../src/theme';
+import { getAutoParseEnabled, setAutoParseEnabled, ThemeMode } from '../src/services/settingsStorage';
 
 export default function SettingsScreen() {
     const router = useRouter();
+    const theme = useAppTheme();
+    const { mode, setMode } = useThemeSettings();
     const [apiKey, setApiKey] = useState('');
     const [loading, setLoading] = useState(true);
     const [testing, setTesting] = useState(false);
     const [isVisible, setIsVisible] = useState(false);
     const [autoParse, setAutoParse] = useState(true);
+
+    const styles = useMemo(() => createStyles(theme), [theme]);
 
     useEffect(() => {
         loadKey();
@@ -22,8 +26,12 @@ export default function SettingsScreen() {
 
     const navigation = useNavigation();
     useEffect(() => {
-        navigation.setOptions({ title: 'Settings' });
-    }, [navigation]);
+        navigation.setOptions({
+            title: 'Settings',
+            headerStyle: { backgroundColor: theme.colors.card },
+            headerTintColor: theme.colors.text,
+        });
+    }, [navigation, theme]);
 
     const loadKey = async () => {
         try {
@@ -109,10 +117,37 @@ export default function SettingsScreen() {
         ]);
     };
 
+    const renderThemeOption = (optionMode: ThemeMode, label: string, icon: keyof typeof Ionicons.glyphMap) => (
+        <TouchableOpacity
+            style={[styles.themeOption, mode === optionMode && styles.themeOptionActive]}
+            onPress={() => setMode(optionMode)}
+        >
+            <Ionicons
+                name={icon}
+                size={20}
+                color={mode === optionMode ? theme.colors.primary : theme.colors.textSecondary}
+            />
+            <Text style={[styles.themeOptionText, mode === optionMode && styles.themeOptionTextActive]}>
+                {label}
+            </Text>
+        </TouchableOpacity>
+    );
+
     return (
         <SafeAreaView style={styles.container}>
-
             <View style={styles.content}>
+
+                {/* Theme Section */}
+                <View style={styles.section}>
+                    <Text style={styles.label}>Appearance</Text>
+                    <View style={styles.themeSelector}>
+                        {renderThemeOption('light', 'Light', 'sunny')}
+                        {renderThemeOption('dark', 'Dark', 'moon')}
+                        {renderThemeOption('system', 'System', 'cog')}
+                    </View>
+                </View>
+
+                {/* Auto Parse Section */}
                 <View style={styles.section}>
                     <View style={styles.row}>
                         <Text style={styles.label}>Enable Auto-Parsing</Text>
@@ -128,6 +163,7 @@ export default function SettingsScreen() {
                     </Text>
                 </View>
 
+                {/* API Key Section */}
                 <View style={[styles.section, !autoParse && styles.disabledSection]}>
                     <View style={styles.labelRow}>
                         <Text style={styles.label}>Gemini API Key</Text>
@@ -148,6 +184,7 @@ export default function SettingsScreen() {
                             value={apiKey}
                             onChangeText={setApiKey}
                             placeholder="Enter API Key"
+                            placeholderTextColor={theme.colors.textLight}
                             secureTextEntry={!isVisible}
                             autoCapitalize="none"
                             editable={autoParse}
@@ -205,7 +242,7 @@ export default function SettingsScreen() {
     );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (theme: any) => StyleSheet.create({
     container: {
         flex: 1,
         backgroundColor: theme.colors.background,
@@ -224,12 +261,14 @@ const styles = StyleSheet.create({
     },
     headerTitle: {
         ...theme.typography.h2,
+        color: theme.colors.text,
     },
     content: {
         padding: theme.spacing.l,
     },
     label: {
         ...theme.typography.h2,
+        color: theme.colors.text,
         marginBottom: theme.spacing.s,
     },
     description: {
@@ -282,6 +321,7 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         justifyContent: 'center',
         ...theme.shadows.card,
+        shadowColor: theme.colors.text, // Adapt shadow color slightly
     },
     saveButton: {
         backgroundColor: theme.colors.primary,
@@ -309,7 +349,7 @@ const styles = StyleSheet.create({
     infoBox: {
         marginTop: theme.spacing.xl,
         flexDirection: 'row',
-        backgroundColor: theme.colors.primaryLight + '40',
+        backgroundColor: theme.colors.primaryLight,
         padding: theme.spacing.m,
         borderRadius: theme.borderRadius.m,
         gap: theme.spacing.s,
@@ -339,5 +379,34 @@ const styles = StyleSheet.create({
     },
     clearButtonTextDisabled: {
         color: theme.colors.textLight,
+    },
+    themeSelector: {
+        flexDirection: 'row',
+        backgroundColor: theme.colors.card, // or a darker/lighter shade for container
+        borderRadius: theme.borderRadius.m,
+        padding: 4,
+        borderWidth: 1,
+        borderColor: theme.colors.border,
+    },
+    themeOption: {
+        flex: 1,
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        paddingVertical: 8,
+        borderRadius: theme.borderRadius.s,
+        gap: 6,
+    },
+    themeOptionActive: {
+        backgroundColor: theme.colors.background, // Contrast against card
+        ...theme.shadows.card,
+    },
+    themeOptionText: {
+        ...theme.typography.caption,
+        fontWeight: '600',
+        color: theme.colors.textSecondary,
+    },
+    themeOptionTextActive: {
+        color: theme.colors.primary,
     }
 });

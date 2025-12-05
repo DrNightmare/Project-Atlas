@@ -1,18 +1,18 @@
 import { Ionicons } from '@expo/vector-icons';
 import { isBefore, startOfDay } from 'date-fns';
 import { useFocusEffect, useRouter } from 'expo-router';
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, Alert, Platform, SectionList, StyleSheet, Text, ToastAndroid, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { DocumentCard } from '../../src/components/DocumentCard';
 import { TripCard } from '../../src/components/TripCard';
+import { useAppTheme } from '../../src/context/ThemeContext';
 import { useDocumentPicker } from '../../src/hooks/useDocumentPicker';
 import { addDocument, deleteDocument, deleteTrip, Document, getDocuments, getTripById, getTrips, initDatabase, Trip, updateDocument } from '../../src/services/database';
 import { documentsChanged } from '../../src/services/events';
 import { deleteFile, initFileStorage, saveFile } from '../../src/services/fileStorage';
 import { ApiKeyMissingError, parseDocumentWithGemini } from '../../src/services/geminiParser';
 import { getAutoParseEnabled } from '../../src/services/settingsStorage';
-import { theme } from '../../src/theme';
 
 const showToast = (msg: string) => {
   if (Platform.OS === 'android') {
@@ -36,6 +36,8 @@ interface Section {
 
 export default function TimelineScreen() {
   const router = useRouter();
+  const theme = useAppTheme();
+  const styles = useMemo(() => createStyles(theme), [theme]);
   const { pickDocument, PickerModal } = useDocumentPicker();
   const [sections, setSections] = useState<Section[]>([]);
   const [allDocuments, setAllDocuments] = useState<Document[]>([]); // Keep track for selection logic
@@ -581,7 +583,7 @@ export default function TimelineScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (theme: any) => StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: theme.colors.background,
@@ -596,6 +598,7 @@ const styles = StyleSheet.create({
   },
   headerTitle: {
     ...theme.typography.h1,
+    color: theme.colors.text,
   },
   headerButton: {
     padding: theme.spacing.xs,
@@ -650,7 +653,7 @@ const styles = StyleSheet.create({
     padding: theme.spacing.m,
     marginHorizontal: theme.spacing.m,
     marginTop: theme.spacing.s,
-    backgroundColor: theme.colors.primary + '10', // Very light primary bg
+    backgroundColor: theme.colors.primaryContainer,
     borderRadius: 100, // Pill shape
     gap: theme.spacing.s,
   },

@@ -1,18 +1,18 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
 import { useRouter } from 'expo-router';
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import { ActivityIndicator, Alert, FlatList, Platform, StyleSheet, Text, ToastAndroid, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { FloatingActionButton } from '../../src/components/FloatingActionButton';
 import { IdentityDocumentCard } from '../../src/components/IdentityDocumentCard';
+import { useAppTheme } from '../../src/context/ThemeContext';
 import { useDocumentPicker } from '../../src/hooks/useDocumentPicker';
 import { addIdentityDocument, getIdentityDocuments, IdentityDocument, initDatabase, updateIdentityDocument } from '../../src/services/database';
 import { saveFile } from '../../src/services/fileStorage';
 import { ApiKeyMissingError } from '../../src/services/geminiParser';
 import { parseIdentityDocumentWithGemini } from '../../src/services/identityParser';
 import { getAutoParseEnabled } from '../../src/services/settingsStorage';
-import { theme } from '../../src/theme';
 
 const showToast = (msg: string) => {
     if (Platform.OS === 'android') {
@@ -24,6 +24,8 @@ const showToast = (msg: string) => {
 
 export default function IdentityScreen() {
     const router = useRouter();
+    const theme = useAppTheme();
+    const styles = useMemo(() => createStyles(theme), [theme]);
     const { pickDocument, PickerModal } = useDocumentPicker();
     const [documents, setDocuments] = useState<IdentityDocument[]>([]);
     const [loading, setLoading] = useState(false);
@@ -213,7 +215,7 @@ export default function IdentityScreen() {
     );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (theme: any) => StyleSheet.create({
     container: {
         flex: 1,
         backgroundColor: theme.colors.background,
@@ -228,6 +230,7 @@ const styles = StyleSheet.create({
     },
     headerTitle: {
         ...theme.typography.h1,
+        color: theme.colors.text,
     },
     headerButton: {
         padding: theme.spacing.xs,
@@ -238,6 +241,7 @@ const styles = StyleSheet.create({
     },
     row: {
         justifyContent: 'space-between',
+        alignItems: 'flex-start',
     },
     gridItem: {
         width: '48%',

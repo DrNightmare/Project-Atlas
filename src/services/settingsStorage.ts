@@ -20,3 +20,28 @@ export const setAutoParseEnabled = async (enabled: boolean): Promise<void> => {
         console.error('Failed to set auto parse setting', e);
     }
 };
+
+const THEME_MODE_KEY = 'settings_theme_mode';
+
+export type ThemeMode = 'light' | 'dark' | 'system';
+
+export const getThemeMode = async (): Promise<ThemeMode> => {
+    try {
+        const result = await SecureStore.getItemAsync(THEME_MODE_KEY);
+        if (result === 'light' || result === 'dark' || result === 'system') {
+            return result;
+        }
+        return 'system';
+    } catch (e) {
+        console.error('Failed to get theme mode', e);
+        return 'system';
+    }
+};
+
+export const setThemeMode = async (mode: ThemeMode): Promise<void> => {
+    try {
+        await SecureStore.setItemAsync(THEME_MODE_KEY, mode);
+    } catch (e) {
+        console.error('Failed to set theme mode', e);
+    }
+};

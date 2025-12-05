@@ -1,9 +1,9 @@
 import { Ionicons } from '@expo/vector-icons';
 import { format } from 'date-fns';
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { LayoutAnimation, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { useAppTheme } from '../context/ThemeContext';
 import { Document, Trip } from '../services/database';
-import { theme } from '../theme';
 import { DocumentCard } from './DocumentCard';
 
 interface Props {
@@ -27,6 +27,8 @@ export const TripCard: React.FC<Props> = ({
     onAddDocument,
     onLongPress
 }) => {
+    const theme = useAppTheme();
+    const styles = useMemo(() => createStyles(theme), [theme]);
     const [expanded, setExpanded] = useState(false);
 
     const toggleExpand = () => {
@@ -99,7 +101,7 @@ export const TripCard: React.FC<Props> = ({
     );
 };
 
-const styles = StyleSheet.create({
+const createStyles = (theme: any) => StyleSheet.create({
     container: {
         marginBottom: theme.spacing.m,
         backgroundColor: theme.colors.background,
@@ -120,7 +122,7 @@ const styles = StyleSheet.create({
         borderBottomColor: theme.colors.border,
     },
     selectedHeader: {
-        backgroundColor: theme.colors.primary + '15',
+        backgroundColor: theme.colors.primaryContainer,
         borderColor: theme.colors.primary,
         borderWidth: 1,
     },
@@ -128,7 +130,7 @@ const styles = StyleSheet.create({
         width: 40,
         height: 40,
         borderRadius: 20,
-        backgroundColor: theme.colors.primary + '15',
+        backgroundColor: theme.colors.primaryContainer,
         justifyContent: 'center',
         alignItems: 'center',
         marginRight: theme.spacing.m,

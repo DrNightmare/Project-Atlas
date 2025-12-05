@@ -1,7 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
-import React from 'react';
+import React, { useMemo } from 'react';
 import { ActivityIndicator, StyleSheet, TouchableOpacity } from 'react-native';
-import { theme } from '../theme';
+import { useAppTheme } from '../context/ThemeContext';
 
 interface Props {
     onPress: () => void;
@@ -10,6 +10,9 @@ interface Props {
 }
 
 export const FloatingActionButton: React.FC<Props> = ({ onPress, disabled, processing }) => {
+    const theme = useAppTheme();
+    const styles = useMemo(() => createStyles(theme), [theme]);
+
     return (
         <TouchableOpacity
             style={[styles.fab, disabled && styles.fabDisabled]}
@@ -26,7 +29,7 @@ export const FloatingActionButton: React.FC<Props> = ({ onPress, disabled, proce
     );
 };
 
-const styles = StyleSheet.create({
+const createStyles = (theme: any) => StyleSheet.create({
     fab: {
         position: 'absolute',
         right: 20,
@@ -39,6 +42,7 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         ...theme.shadows.card,
         elevation: 8,
+        shadowColor: theme.colors.primary,
     },
     fabDisabled: {
         opacity: 0.6,

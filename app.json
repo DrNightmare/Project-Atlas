@@ -51,8 +51,14 @@
         }
       ],
       [
-        "./modules/share-intent/plugin/withShareIntent.js"
-      ]
+        "expo-share-intent",
+        {
+          "android": {
+            "disableAndroid": true
+          }
+        }
+      ],
+      "./plugins/withShareTrampoline"
     ],
     "experiments": {
       "typedRoutes": true,

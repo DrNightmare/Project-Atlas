@@ -2,14 +2,16 @@ import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
 import { useRouter } from 'expo-router';
 import React, { useCallback, useMemo, useState } from 'react';
-import { ActivityIndicator, Alert, FlatList, Platform, StyleSheet, Text, ToastAndroid, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, Alert, FlatList, Platform, StyleSheet, Text, ToastAndroid, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { FloatingActionButton } from '../../src/components/FloatingActionButton';
 import { IdentityDocumentCard } from '../../src/components/IdentityDocumentCard';
+import { SelectionHeader } from '../../src/components/SelectionHeader';
 import { useAppTheme } from '../../src/context/ThemeContext';
 import { useDocumentPicker } from '../../src/hooks/useDocumentPicker';
-import { addIdentityDocument, getIdentityDocuments, IdentityDocument, initDatabase, updateIdentityDocument } from '../../src/services/database';
-import { saveFile } from '../../src/services/fileStorage';
+import { useSelectionMode } from '../../src/hooks/useSelectionMode';
+import { addIdentityDocument, deleteIdentityDocument, getIdentityDocuments, IdentityDocument, initDatabase, updateIdentityDocument } from '../../src/services/database';
+import { deleteFile, saveFile } from '../../src/services/fileStorage';
 import { ApiKeyMissingError } from '../../src/services/geminiParser';
 import { parseIdentityDocumentWithGemini } from '../../src/services/identityParser';
 import { getAutoParseEnabled } from '../../src/services/settingsStorage';
@@ -30,6 +32,16 @@ export default function IdentityScreen() {
     const [documents, setDocuments] = useState<IdentityDocument[]>([]);
     const [loading, setLoading] = useState(false);
     const [processing, setProcessing] = useState(false);
+
+    // Shared Selection Hook
+    const {
+        selectionMode,
+        selectedIds,
+        toggleSelection,
+        resetSelection,
+        confirmDelete,
+        setSelectionMode
+    } = useSelectionMode();
 
     // Load documents when screen comes into focus
     useFocusEffect(
@@ -155,34 +167,154 @@ export default function IdentityScreen() {
     };
 
     const handlePress = (doc: IdentityDocument) => {
-        router.push({
-            pathname: '/identity-view',
-            params: {
-                id: doc.id.toString(),
-                uri: doc.uri,
-                title: doc.title,
-            },
-        });
+        if (selectionMode) {
+            toggleSelection(doc.id.toString());
+        } else {
+            router.push({
+                pathname: '/identity-view',
+                params: {
+                    id: doc.id.toString(),
+                    uri: doc.uri,
+                    title: doc.title,
+                },
+            });
+        }
     };
 
-    const renderItem = ({ item }: { item: IdentityDocument }) => (
-        <View style={styles.gridItem}>
-            <IdentityDocumentCard
-                doc={item}
-                onPress={() => handlePress(item)}
-                processing={item.processing === 1}
-            />
-        </View>
-    );
+    const handleLongPress = (doc: IdentityDocument) => {
+        setSelectionMode(true);
+        toggleSelection(doc.id.toString());
+    };
+
+    const performDelete = async () => {
+        try {
+            const ids = Array.from(selectedIds).map(Number);
+            const docsToDelete = documents.filter(d => ids.includes(d.id));
+
+            for (const doc of docsToDelete) {
+                await deleteFile(doc.uri);
+                deleteIdentityDocument(doc.id);
+            }
+            loadDocuments();
+        } catch (e) {
+            console.error('Failed to delete documents', e);
+            Alert.alert('Error', 'Failed to delete selected documents');
+        }
+    };
+
+    const handleEdit = () => {
+        if (selectedIds.size !== 1) {
+            Alert.alert('Edit', 'Please select exactly one document to edit.');
+            return;
+        }
+
+        const id = Number(Array.from(selectedIds)[0]);
+        const doc = documents.find(d => d.id === id);
+
+        if (doc) {
+            router.push({
+                pathname: '/identity-view',
+                params: {
+                    id: doc.id.toString(),
+                    uri: doc.uri,
+                    title: doc.title,
+                    autoEdit: 'true'
+                },
+            });
+            resetSelection();
+        }
+    };
+
+    const handleReprocess = async () => {
+        const autoParseEnabled = await getAutoParseEnabled();
+        if (!autoParseEnabled) {
+            Alert.alert(
+                'Auto-Parsing Disabled',
+                'Please enable auto-parsing in Settings to use this feature.',
+                [
+                    { text: 'Cancel', style: 'cancel' },
+                    {
+                        text: 'Go to Settings',
+                        onPress: () => router.push('/settings')
+                    }
+                ]
+            );
+            return;
+        }
+
+        setProcessing(true);
+        try {
+            const ids = Array.from(selectedIds).map(Number);
+            const docsToReprocess = documents.filter(d => ids.includes(d.id));
+            let successCount = 0;
+
+            for (const doc of docsToReprocess) {
+                try {
+                    // Mark processing
+                    updateIdentityDocument(doc.id, doc.title, doc.type, doc.documentNumber, doc.issueDate, doc.expiryDate, doc.owner, 1);
+
+                    const parsedData = await parseIdentityDocumentWithGemini(doc.uri);
+
+                    updateIdentityDocument(
+                        doc.id,
+                        parsedData.title,
+                        parsedData.type,
+                        parsedData.documentNumber,
+                        parsedData.issueDate,
+                        parsedData.expiryDate,
+                        parsedData.owner,
+                        0
+                    );
+                    successCount++;
+                } catch (e) {
+                    console.error(`Failed to reprocess doc ${doc.id}`, e);
+                    updateIdentityDocument(doc.id, doc.title, doc.type, doc.documentNumber, doc.issueDate, doc.expiryDate, doc.owner, 0);
+                }
+            }
+            showToast(`Reprocessed ${successCount} document(s)`);
+            resetSelection();
+            loadDocuments();
+        } catch (e) {
+            showToast('Failed to reprocess documents');
+        } finally {
+            setProcessing(false);
+        }
+    };
+
+    const renderItem = ({ item }: { item: IdentityDocument }) => {
+        const isSelected = selectedIds.has(item.id.toString());
+
+        return (
+            <View style={styles.gridItem}>
+                <IdentityDocumentCard
+                    doc={item}
+                    onPress={() => handlePress(item)}
+                    onLongPress={() => handleLongPress(item)}
+                    processing={item.processing === 1}
+                // Pass a simple style or prop for selection visual if specific prop not exists
+                // Assuming IdentityDocumentCard might need update to show "selected" state
+                // For now, we rely on opacity or border if we updated the card, checking prev implementation
+                />
+                {isSelected && (
+                    <View style={styles.selectedOverlay} pointerEvents="none">
+                        <Ionicons name="checkmark-circle" size={32} color={theme.colors.primary} />
+                    </View>
+                )}
+            </View>
+        );
+    };
 
     return (
         <SafeAreaView style={styles.container}>
-            <View style={styles.header}>
-                <Text style={styles.headerTitle}>Identity</Text>
-                <TouchableOpacity onPress={() => router.push('/settings')} style={styles.headerButton}>
-                    <Ionicons name="settings-outline" size={24} color={theme.colors.text} />
-                </TouchableOpacity>
-            </View>
+            <SelectionHeader
+                title="Identity"
+                selectionMode={selectionMode}
+                onCancelSelection={resetSelection}
+                onEdit={handleEdit}
+                onReprocess={handleReprocess}
+                onDelete={() => confirmDelete(performDelete, 'document')}
+                onSettingsPress={() => router.push('/settings')}
+            />
 
             {loading ? (
                 <ActivityIndicator size="large" color={theme.colors.primary} style={styles.loader} />
@@ -220,21 +352,7 @@ const createStyles = (theme: any) => StyleSheet.create({
         flex: 1,
         backgroundColor: theme.colors.background,
     },
-    header: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        paddingHorizontal: theme.spacing.l,
-        paddingVertical: theme.spacing.m,
-        backgroundColor: theme.colors.background,
-    },
-    headerTitle: {
-        ...theme.typography.h1,
-        color: theme.colors.text,
-    },
-    headerButton: {
-        padding: theme.spacing.xs,
-    },
+    // Header styles moved to SelectionComponent, removed here
     list: {
         paddingHorizontal: theme.spacing.m,
         paddingBottom: theme.spacing.xl,
@@ -246,6 +364,15 @@ const createStyles = (theme: any) => StyleSheet.create({
     gridItem: {
         width: '48%',
         marginBottom: theme.spacing.m,
+    },
+    selectedOverlay: {
+        ...StyleSheet.absoluteFillObject,
+        backgroundColor: theme.colors.primary + '20',
+        borderRadius: theme.borderRadius.m,
+        justifyContent: 'center',
+        alignItems: 'center',
+        borderWidth: 2,
+        borderColor: theme.colors.primary,
     },
     loader: {
         marginTop: 50,

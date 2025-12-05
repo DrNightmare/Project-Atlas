@@ -8,10 +8,11 @@ import { IdentityDocument } from '../services/database';
 interface Props {
     doc: IdentityDocument;
     onPress?: () => void;
+    onLongPress?: () => void;
     processing?: boolean;
 }
 
-export const IdentityDocumentCard: React.FC<Props> = ({ doc, onPress, processing }) => {
+export const IdentityDocumentCard: React.FC<Props> = ({ doc, onPress, onLongPress, processing }) => {
     const theme = useAppTheme();
     const styles = useMemo(() => createStyles(theme), [theme]);
 
@@ -50,6 +51,7 @@ export const IdentityDocumentCard: React.FC<Props> = ({ doc, onPress, processing
                 showExpiryWarning && !expired && styles.warningCard
             ]}
             onPress={onPress}
+            onLongPress={onLongPress}
             activeOpacity={0.7}
         >
             <View style={[styles.iconContainer, { backgroundColor: icon.color + '15' }]}>

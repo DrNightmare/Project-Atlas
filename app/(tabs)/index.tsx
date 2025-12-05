@@ -14,6 +14,9 @@ import { deleteFile, initFileStorage, saveFile } from '../../src/services/fileSt
 import { ApiKeyMissingError, parseDocumentWithGemini } from '../../src/services/geminiParser';
 import { getAutoParseEnabled } from '../../src/services/settingsStorage';
 
+import { SelectionHeader } from '../../src/components/SelectionHeader';
+import { useSelectionMode } from '../../src/hooks/useSelectionMode';
+
 const showToast = (msg: string) => {
   if (Platform.OS === 'android') {
     ToastAndroid.show(msg, ToastAndroid.SHORT);
@@ -39,12 +42,21 @@ export default function TimelineScreen() {
   const theme = useAppTheme();
   const styles = useMemo(() => createStyles(theme), [theme]);
   const { pickDocument, PickerModal } = useDocumentPicker();
+
   const [sections, setSections] = useState<Section[]>([]);
-  const [allDocuments, setAllDocuments] = useState<Document[]>([]); // Keep track for selection logic
+  const [allDocuments, setAllDocuments] = useState<Document[]>([]);
   const [loading, setLoading] = useState(false);
-  const [processing, setProcessing] = useState(false); // for add/reprocess button state
-  const [selectionMode, setSelectionMode] = useState(false);
-  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [processing, setProcessing] = useState(false);
+
+  // Use the new hook
+  const {
+    selectionMode,
+    selectedIds,
+    toggleSelection,
+    resetSelection,
+    confirmDelete,
+    setSelectionMode
+  } = useSelectionMode();
 
   // Initialise DB and storage once
   useEffect(() => {
@@ -241,17 +253,6 @@ export default function TimelineScreen() {
     }
   };
 
-  const toggleSelection = (id: string) => {
-    const newSelected = new Set(selectedIds);
-    if (newSelected.has(id)) {
-      newSelected.delete(id);
-      if (newSelected.size === 0) setSelectionMode(false);
-    } else {
-      newSelected.add(id);
-    }
-    setSelectedIds(newSelected);
-  };
-
   const handleLongPress = (type: 'doc' | 'trip', id: number) => {
     setSelectionMode(true);
     toggleSelection(`${type}-${id}`);
@@ -265,45 +266,35 @@ export default function TimelineScreen() {
     }
   };
 
-  const handleDelete = async () => {
-    Alert.alert('Delete Items', `Are you sure you want to delete ${selectedIds.size} item(s)?`, [
-      { text: 'Cancel', style: 'cancel' },
-      {
-        text: 'Delete',
-        style: 'destructive',
-        onPress: async () => {
-          try {
-            const ids = Array.from(selectedIds);
+  const performDelete = async () => {
+    try {
+      const ids = Array.from(selectedIds);
 
-            // Delete Documents
-            const docIds = ids
-              .filter(id => id.startsWith('doc-'))
-              .map(id => Number(id.replace('doc-', '')));
+      // Delete Documents
+      const docIds = ids
+        .filter(id => id.startsWith('doc-'))
+        .map(id => Number(id.replace('doc-', '')));
 
-            const docsToDelete = allDocuments.filter((d) => docIds.includes(d.id));
-            for (const doc of docsToDelete) {
-              await deleteFile(doc.uri);
-              deleteDocument(doc.id);
-            }
+      const docsToDelete = allDocuments.filter((d) => docIds.includes(d.id));
+      for (const doc of docsToDelete) {
+        await deleteFile(doc.uri);
+        deleteDocument(doc.id);
+      }
 
-            // Delete Trips
-            const tripIds = ids
-              .filter(id => id.startsWith('trip-'))
-              .map(id => Number(id.replace('trip-', '')));
+      // Delete Trips
+      const tripIds = ids
+        .filter(id => id.startsWith('trip-'))
+        .map(id => Number(id.replace('trip-', '')));
 
-            for (const tripId of tripIds) {
-              deleteTrip(tripId);
-            }
+      for (const tripId of tripIds) {
+        deleteTrip(tripId);
+      }
 
-            setSelectionMode(false);
-            setSelectedIds(new Set());
-            loadDocuments();
-          } catch (e) {
-            Alert.alert('Error', 'Failed to delete items');
-          }
-        },
-      },
-    ]);
+      loadDocuments();
+    } catch (e) {
+      Alert.alert('Error', 'Failed to delete items');
+      throw e; // Rethrow to stop selection reset if we want that, currently hook resets anyway
+    }
   };
 
   const handleEdit = () => {
@@ -335,8 +326,7 @@ export default function TimelineScreen() {
             endDate: trip.endDate,
           },
         });
-        setSelectionMode(false);
-        setSelectedIds(new Set());
+        resetSelection();
       }
       return;
     }
@@ -354,8 +344,7 @@ export default function TimelineScreen() {
             autoEdit: 'true',
           },
         });
-        setSelectionMode(false);
-        setSelectedIds(new Set());
+        resetSelection();
       }
       return;
     }
@@ -368,8 +357,7 @@ export default function TimelineScreen() {
           docIds: docIds.join(','),
         },
       });
-      setSelectionMode(false);
-      setSelectedIds(new Set());
+      resetSelection();
       return;
     }
 
@@ -471,8 +459,7 @@ export default function TimelineScreen() {
       }
 
       showToast(`Reprocessed ${successCount} document(s)`);
-      setSelectionMode(false);
-      setSelectedIds(new Set());
+      resetSelection();
       loadDocuments();
     } catch (e) {
       showToast('Failed to reprocess documents');
@@ -481,40 +468,17 @@ export default function TimelineScreen() {
     }
   };
 
-  const cancelSelection = () => {
-    setSelectionMode(false);
-    setSelectedIds(new Set());
-  };
-
   return (
     <SafeAreaView style={styles.container}>
-      <View style={styles.header}>
-        {selectionMode ? (
-          <>
-            <TouchableOpacity onPress={cancelSelection} style={styles.headerButton}>
-              <Ionicons name="close" size={24} color={theme.colors.text} />
-            </TouchableOpacity>
-            <View style={styles.selectionActions}>
-              <TouchableOpacity onPress={handleEdit} style={styles.actionButton}>
-                <Ionicons name="pencil" size={24} color={theme.colors.primary} />
-              </TouchableOpacity>
-              <TouchableOpacity onPress={handleReprocess} style={styles.actionButton}>
-                <Ionicons name="refresh" size={24} color={theme.colors.primary} />
-              </TouchableOpacity>
-              <TouchableOpacity onPress={handleDelete} style={styles.actionButton}>
-                <Ionicons name="trash-outline" size={24} color={theme.colors.error} />
-              </TouchableOpacity>
-            </View>
-          </>
-        ) : (
-          <>
-            <Text style={styles.headerTitle}>Timeline</Text>
-            <TouchableOpacity onPress={() => router.push('/settings')} style={styles.headerButton}>
-              <Ionicons name="settings-outline" size={24} color={theme.colors.text} />
-            </TouchableOpacity>
-          </>
-        )}
-      </View>
+      <SelectionHeader
+        title="Timeline"
+        selectionMode={selectionMode}
+        onCancelSelection={resetSelection}
+        onEdit={handleEdit}
+        onReprocess={handleReprocess}
+        onDelete={() => confirmDelete(performDelete)}
+        onSettingsPress={() => router.push('/settings')}
+      />
 
       <TouchableOpacity
         style={styles.addTripButton}

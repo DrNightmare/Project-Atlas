@@ -20,8 +20,8 @@
 - [ ] Detect and highlight gaps in the timeline.
 - [ ] Add animations and improved loaders.
 - [ ] Create a landing page.
-- [ ] Add long-press actions on the identity screen.
-- [ ] Implement dark mode.
+- [x] Add long-press actions on the identity screen.
+- [x] Implement dark mode.
 - [x] Improve UI of indented items with smaller card variants.
 - [x] Provide a clearer entry point for creating trips (reconsider FAB).
 - [x] Standardize UX for editing, deleting, viewing, and reprocessing.

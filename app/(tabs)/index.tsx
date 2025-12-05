@@ -535,7 +535,7 @@ export default function TimelineScreen() {
             <View style={styles.emptyContainer}>
               <Ionicons name="documents-outline" size={64} color={theme.colors.textLight} />
               <Text style={styles.emptyText}>No documents yet</Text>
-              <Text style={styles.emptySubtext}>Tap the + button to add your first trip</Text>
+              <Text style={styles.emptySubtext}>Tap the "Add Trip" button to add your first trip</Text>
             </View>
           }
           stickySectionHeadersEnabled={false}

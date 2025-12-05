@@ -1,4 +1,5 @@
-import { addDocument, updateDocument } from './database';
+import { ToastAndroid } from 'react-native';
+import { addDocument, getTrips, updateDocument } from './database';
 import { documentsChanged } from './events';
 import { ApiKeyMissingError, parseDocumentWithGemini } from './geminiParser';
 
@@ -41,7 +42,32 @@ export const processDocument = async (
     try {
         const parsedDataArray = await parseDocumentWithGemini(uri);
 
-        // 5. Update Original Document
+        // 5. Auto-tag Trip if not provided
+        let finalTripId = tripId;
+        const docDate = new Date(parsedDataArray[0].date);
+
+        if (!finalTripId && !isNaN(docDate.getTime())) {
+            const trips = getTrips();
+            // Trips are already sorted by startDate DESC or we can sort them
+            // The user asked for "chronological order" (oldest first?), usually matching logic iterates and takes the first specific box it fits in.
+            // Let's sort oldest first for chronological iteration as requested.
+            const sortedTrips = [...trips].sort((a, b) => new Date(a.startDate).getTime() - new Date(b.startDate).getTime());
+
+            for (const trip of sortedTrips) {
+                const start = new Date(trip.startDate);
+                const end = new Date(trip.endDate);
+
+                // Set hours to 0 to compare dates only, or just use raw comparison if timestamps match
+                // Assuming "within dates", broad comparison is safer.
+                if (docDate >= start && docDate <= end) {
+                    finalTripId = trip.id;
+                    ToastAndroid.show(`Auto-added to trip: ${trip.title}`, ToastAndroid.SHORT);
+                    break;
+                }
+            }
+        }
+
+        // 6. Update Original Document
         const firstItem = parsedDataArray[0];
         updateDocument(
             docId,
@@ -51,7 +77,7 @@ export const processDocument = async (
             firstItem.subType,
             firstItem.owner,
             0, // Processing complete
-            tripId
+            finalTripId
         );
 
         // 6. Add Extra Documents if any
@@ -66,7 +92,7 @@ export const processDocument = async (
                     item.subType,
                     item.owner,
                     0, // Not processing
-                    tripId
+                    finalTripId
                 );
             }
         }

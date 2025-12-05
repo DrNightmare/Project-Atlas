@@ -7,7 +7,7 @@
 - [x] Implement share intent for documents (with trampoline).
 - [x] Fix share intent not working if app is already open.
 - [ ] Parse destinations from documents and store them.
-- [ ] Enable automatic trip tagging on upload.
+- [x] Enable automatic trip tagging on upload.
 - [ ] Reject unrelated or random documents.
 - [ ] Add document deduplication.
 - [x] Make auto-parsing optional per upload.

@@ -3,7 +3,9 @@ import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import 'react-native-reanimated';
 
+import { LockScreen } from '@/components/LockScreen';
 import { ThemeProvider, useThemeSettings } from '@/src/context/ThemeContext';
+import { AuthProvider, useAuth } from '@/src/context/auth-context';
 import { useShareIntent } from '@/src/hooks/use-share-intent';
 
 export const unstable_settings = {
@@ -12,7 +14,17 @@ export const unstable_settings = {
 
 function RootLayoutNav() {
   const { isDark } = useThemeSettings();
+  const { isAuthenticated } = useAuth();
   useShareIntent();
+
+  if (!isAuthenticated) {
+    return (
+      <NavigationThemeProvider value={isDark ? DarkTheme : DefaultTheme}>
+        <LockScreen />
+        <StatusBar style={isDark ? "light" : "dark"} />
+      </NavigationThemeProvider>
+    );
+  }
 
   return (
     <NavigationThemeProvider value={isDark ? DarkTheme : DefaultTheme}>
@@ -28,7 +40,9 @@ function RootLayoutNav() {
 export default function RootLayout() {
   return (
     <ThemeProvider>
-      <RootLayoutNav />
+      <AuthProvider>
+        <RootLayoutNav />
+      </AuthProvider>
     </ThemeProvider>
   );
 }

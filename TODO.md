@@ -1,7 +1,7 @@
 # Project Atlas - TODO List
 
 ## Security & Authentication
-- [ ] Add biometric lock support.
+- [x] Add biometric lock support.
 
 ## Document Management
 - [x] Implement share intent for documents (with trampoline).
@@ -27,7 +27,7 @@
 - [x] Standardize UX for editing, deleting, viewing, and reprocessing.
 - [x] Finalize and apply the new logo.
 - [x] Add safe-space padding across screens.
-- [ ] Fix home screen not being scrollable.
+- [x] Fix home screen not being scrollable.
 
 ## Timeline Features
 - [ ] Auto-refresh timeline dates with manual refresh option.

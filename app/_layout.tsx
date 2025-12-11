@@ -1,7 +1,9 @@
 import { DarkTheme, DefaultTheme, ThemeProvider as NavigationThemeProvider } from '@react-navigation/native';
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
+import { StyleSheet, View } from 'react-native';
 import 'react-native-reanimated';
+import Animated, { SlideOutUp } from 'react-native-reanimated';
 
 import { LockScreen } from '@/components/LockScreen';
 import { ThemeProvider, useThemeSettings } from '@/src/context/ThemeContext';
@@ -17,22 +19,24 @@ function RootLayoutNav() {
   const { isAuthenticated } = useAuth();
   useShareIntent();
 
-  if (!isAuthenticated) {
-    return (
-      <NavigationThemeProvider value={isDark ? DarkTheme : DefaultTheme}>
-        <LockScreen />
-        <StatusBar style={isDark ? "light" : "dark"} />
-      </NavigationThemeProvider>
-    );
-  }
-
   return (
     <NavigationThemeProvider value={isDark ? DarkTheme : DefaultTheme}>
-      <Stack>
-        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-        <Stack.Screen name="modal" options={{ presentation: 'modal', title: 'Modal' }} />
-      </Stack>
-      <StatusBar style={isDark ? "light" : "dark"} />
+      <View style={{ flex: 1 }}>
+        <Stack>
+          <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+          <Stack.Screen name="modal" options={{ presentation: 'modal', title: 'Modal' }} />
+        </Stack>
+        <StatusBar style={isDark ? "light" : "dark"} />
+
+        {!isAuthenticated && (
+          <Animated.View
+            style={[StyleSheet.absoluteFill, { zIndex: 1000 }]}
+            exiting={SlideOutUp.duration(500)}
+          >
+            <LockScreen />
+          </Animated.View>
+        )}
+      </View>
     </NavigationThemeProvider>
   );
 }

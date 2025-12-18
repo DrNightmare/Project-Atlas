@@ -1,6 +1,7 @@
 import * as DocumentPicker from 'expo-document-picker';
 import * as ExpoFileSystem from 'expo-file-system/legacy';
 import * as Sharing from 'expo-sharing';
+import { Platform } from 'react-native';
 import {
     addDocument,
     addIdentityDocument,
@@ -63,18 +64,31 @@ export const exportBackup = async () => {
         };
 
         const backupContent = JSON.stringify(backupData);
-        const backupUri = ExpoFileSystem.cacheDirectory + BACKUP_FILE_NAME;
 
-        await ExpoFileSystem.writeAsStringAsync(backupUri, backupContent);
-
-        if (await Sharing.isAvailableAsync()) {
-            await Sharing.shareAsync(backupUri, {
-                mimeType: 'application/json',
-                dialogTitle: 'Export Backup',
-                UTI: 'public.json'
-            });
+        if (Platform.OS === 'android') {
+            const permissions = await ExpoFileSystem.StorageAccessFramework.requestDirectoryPermissionsAsync();
+            if (permissions.granted) {
+                const fileUri = await ExpoFileSystem.StorageAccessFramework.createFileAsync(
+                    permissions.directoryUri,
+                    'atlas_backup',
+                    'application/json'
+                );
+                await ExpoFileSystem.writeAsStringAsync(fileUri, backupContent, { encoding: ExpoFileSystem.EncodingType.UTF8 });
+            }
         } else {
-            throw new Error('Sharing is not available');
+            // iOS
+            const backupUri = ExpoFileSystem.cacheDirectory + BACKUP_FILE_NAME;
+            await ExpoFileSystem.writeAsStringAsync(backupUri, backupContent);
+
+            if (await Sharing.isAvailableAsync()) {
+                await Sharing.shareAsync(backupUri, {
+                    mimeType: 'application/json',
+                    dialogTitle: 'Export Backup',
+                    UTI: 'public.json'
+                });
+            } else {
+                throw new Error('Sharing is not available');
+            }
         }
 
     } catch (error) {

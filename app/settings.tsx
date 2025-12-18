@@ -6,7 +6,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAppTheme, useThemeSettings } from '../src/context/ThemeContext';
 import { deleteApiKey, getApiKey, saveApiKey } from '../src/services/apiKeyStorage';
 import { testApiKey } from '../src/services/geminiParser';
-import { getAutoParseEnabled, setAutoParseEnabled, ThemeMode } from '../src/services/settingsStorage';
+import { GeminiModel, getAutoParseEnabled, getGeminiModel, setAutoParseEnabled, setGeminiModel, ThemeMode } from '../src/services/settingsStorage';
 
 export default function SettingsScreen() {
     const router = useRouter();
@@ -17,6 +17,7 @@ export default function SettingsScreen() {
     const [testing, setTesting] = useState(false);
     const [isVisible, setIsVisible] = useState(false);
     const [autoParse, setAutoParse] = useState(true);
+    const [geminiModel, setGeminiModelLocal] = useState<GeminiModel>('gemini-2.0-flash');
 
     const styles = useMemo(() => createStyles(theme), [theme]);
 
@@ -35,12 +36,14 @@ export default function SettingsScreen() {
 
     const loadKey = async () => {
         try {
-            const [key, autoParseSetting] = await Promise.all([
+            const [key, autoParseSetting, modelSetting] = await Promise.all([
                 getApiKey(),
-                getAutoParseEnabled()
+                getAutoParseEnabled(),
+                getGeminiModel()
             ]);
 
             setAutoParse(autoParseSetting);
+            setGeminiModelLocal(modelSetting);
 
             if (key) {
                 setApiKey(key);
@@ -60,6 +63,11 @@ export default function SettingsScreen() {
     const handleToggleAutoParse = async (value: boolean) => {
         setAutoParse(value);
         await setAutoParseEnabled(value);
+    };
+
+    const handleModelChange = async (model: GeminiModel) => {
+        setGeminiModelLocal(model);
+        await setGeminiModel(model);
     };
 
     const handleSave = async () => {
@@ -124,10 +132,22 @@ export default function SettingsScreen() {
         >
             <Ionicons
                 name={icon}
-                size={20}
+                size={18}
                 color={mode === optionMode ? theme.colors.primary : theme.colors.textSecondary}
             />
             <Text style={[styles.themeOptionText, mode === optionMode && styles.themeOptionTextActive]}>
+                {label}
+            </Text>
+        </TouchableOpacity>
+    );
+
+    const renderModelOption = (model: GeminiModel, label: string) => (
+        <TouchableOpacity
+            style={[styles.modelOption, geminiModel === model && styles.modelOptionActive]}
+            onPress={() => handleModelChange(model)}
+            disabled={!autoParse}
+        >
+            <Text style={[styles.modelOptionText, geminiModel === model && styles.modelOptionTextActive, !autoParse && styles.disabledText]}>
                 {label}
             </Text>
         </TouchableOpacity>
@@ -160,6 +180,18 @@ export default function SettingsScreen() {
                     </View>
                     <Text style={styles.description}>
                         Automatically extract details from documents using Gemini AI.
+                    </Text>
+                </View>
+
+                {/* AI Model Section */}
+                <View style={[styles.section, !autoParse && styles.disabledSection]}>
+                    <Text style={styles.label}>Gemini AI Model</Text>
+                    <View style={styles.modelSelector}>
+                        {renderModelOption('gemini-2.0-flash', '2.5 Flash')}
+                        {renderModelOption('gemini-3-flash-preview', '3 Flash')}
+                    </View>
+                    <Text style={styles.description}>
+                        Select the version of Gemini to use for parsing. Gemini 3 Flash is in preview.
                     </Text>
                 </View>
 
@@ -407,6 +439,34 @@ const createStyles = (theme: any) => StyleSheet.create({
         color: theme.colors.textSecondary,
     },
     themeOptionTextActive: {
+        color: theme.colors.primary,
+    },
+    modelSelector: {
+        flexDirection: 'row',
+        backgroundColor: theme.colors.card,
+        borderRadius: theme.borderRadius.m,
+        padding: 4,
+        borderWidth: 1,
+        borderColor: theme.colors.border,
+        marginBottom: theme.spacing.s,
+    },
+    modelOption: {
+        flex: 1,
+        alignItems: 'center',
+        justifyContent: 'center',
+        paddingVertical: 10,
+        borderRadius: theme.borderRadius.s,
+    },
+    modelOptionActive: {
+        backgroundColor: theme.colors.background,
+        ...theme.shadows.card,
+    },
+    modelOptionText: {
+        ...theme.typography.caption,
+        fontWeight: '600',
+        color: theme.colors.textSecondary,
+    },
+    modelOptionTextActive: {
         color: theme.colors.primary,
     }
 });

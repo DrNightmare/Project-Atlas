@@ -1,5 +1,6 @@
 import * as ExpoFileSystem from 'expo-file-system/legacy';
 import { getApiKey } from './apiKeyStorage';
+import { getGeminiModel } from './settingsStorage';
 
 export interface ParsedData {
     title: string;
@@ -50,13 +51,17 @@ const safeParseDate = (dateStr: any): string => {
 
 export const parseDocumentWithGemini = async (uri: string): Promise<ParsedData[]> => {
     try {
-        // 0. Get API key from secure storage
-        const apiKey = await getApiKey();
+        // 0. Get API key and model from storage
+        const [apiKey, model] = await Promise.all([
+            getApiKey(),
+            getGeminiModel()
+        ]);
+
         if (!apiKey) {
             throw new ApiKeyMissingError();
         }
 
-        const GEMINI_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
+        const GEMINI_URL = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
 
         // 1. Read file as Base64
         const base64 = await ExpoFileSystem.readAsStringAsync(uri, {

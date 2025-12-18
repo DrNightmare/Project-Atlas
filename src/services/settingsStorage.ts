@@ -22,8 +22,31 @@ export const setAutoParseEnabled = async (enabled: boolean): Promise<void> => {
 };
 
 const THEME_MODE_KEY = 'settings_theme_mode';
+const GEMINI_MODEL_KEY = 'settings_gemini_model';
 
 export type ThemeMode = 'light' | 'dark' | 'system';
+export type GeminiModel = 'gemini-2.0-flash' | 'gemini-3-flash-preview';
+
+export const getGeminiModel = async (): Promise<GeminiModel> => {
+    try {
+        const result = await SecureStore.getItemAsync(GEMINI_MODEL_KEY);
+        if (result === 'gemini-2.0-flash' || result === 'gemini-3-flash-preview') {
+            return result;
+        }
+        return 'gemini-3-flash-preview';
+    } catch (e) {
+        console.error('Failed to get gemini model setting', e);
+        return 'gemini-3-flash-preview';
+    }
+};
+
+export const setGeminiModel = async (model: GeminiModel): Promise<void> => {
+    try {
+        await SecureStore.setItemAsync(GEMINI_MODEL_KEY, model);
+    } catch (e) {
+        console.error('Failed to set gemini model setting', e);
+    }
+};
 
 export const getThemeMode = async (): Promise<ThemeMode> => {
     try {

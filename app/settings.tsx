@@ -1,10 +1,11 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation, useRouter } from 'expo-router';
 import React, { useEffect, useMemo, useState } from 'react';
-import { ActivityIndicator, Alert, Linking, Platform, StyleSheet, Switch, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, Alert, Linking, Platform, ScrollView, StyleSheet, Switch, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAppTheme, useThemeSettings } from '../src/context/ThemeContext';
 import { deleteApiKey, getApiKey, saveApiKey } from '../src/services/apiKeyStorage';
+import { exportBackup, importBackup } from '../src/services/backupService';
 import { testApiKey } from '../src/services/geminiParser';
 import { GeminiModel, getAutoParseEnabled, getGeminiModel, setAutoParseEnabled, setGeminiModel, ThemeMode } from '../src/services/settingsStorage';
 
@@ -18,6 +19,7 @@ export default function SettingsScreen() {
     const [isVisible, setIsVisible] = useState(false);
     const [autoParse, setAutoParse] = useState(true);
     const [geminiModel, setGeminiModelLocal] = useState<GeminiModel>('gemini-2.0-flash');
+    const [backupLoading, setBackupLoading] = useState(false);
 
     const styles = useMemo(() => createStyles(theme), [theme]);
 
@@ -125,6 +127,31 @@ export default function SettingsScreen() {
         ]);
     };
 
+    const handleExport = async () => {
+        setBackupLoading(true);
+        try {
+            await exportBackup();
+        } catch (e) {
+            Alert.alert('Export Failed', 'An error occurred while creating the backup.');
+        } finally {
+            setBackupLoading(false);
+        }
+    };
+
+    const handleImport = async () => {
+        setBackupLoading(true);
+        try {
+            const result = await importBackup();
+            if (result.success) {
+                Alert.alert('Success', 'Data restored successfully. Please restart the app for changes to take full effect.');
+            }
+        } catch (e) {
+            Alert.alert('Import Failed', 'Failed to restore data. Make sure the file is a valid Atlas backup.');
+        } finally {
+            setBackupLoading(false);
+        }
+    };
+
     const renderThemeOption = (optionMode: ThemeMode, label: string, icon: keyof typeof Ionicons.glyphMap) => (
         <TouchableOpacity
             style={[styles.themeOption, mode === optionMode && styles.themeOptionActive]}
@@ -155,8 +182,7 @@ export default function SettingsScreen() {
 
     return (
         <SafeAreaView style={styles.container}>
-            <View style={styles.content}>
-
+            <ScrollView contentContainerStyle={styles.content}>
                 {/* Theme Section */}
                 <View style={styles.section}>
                     <Text style={styles.label}>Appearance</Text>
@@ -261,6 +287,31 @@ export default function SettingsScreen() {
                     </TouchableOpacity>
                 </View>
 
+                {/* Data Management Section */}
+                <View style={styles.section}>
+                    <Text style={styles.label}>Data Management</Text>
+                    <Text style={styles.description}>
+                        Backup your data to a file that survives app uninstallation.
+                    </Text>
+                    <View style={styles.actions}>
+                        <TouchableOpacity
+                            style={[styles.button, styles.exportButton]}
+                            onPress={handleExport}
+                            disabled={backupLoading}
+                        >
+                            {backupLoading ? <ActivityIndicator color="#fff" /> : <Text style={styles.buttonText}>Export Backup</Text>}
+                        </TouchableOpacity>
+
+                        <TouchableOpacity
+                            style={[styles.button, styles.importButton]}
+                            onPress={handleImport}
+                            disabled={backupLoading}
+                        >
+                            {backupLoading ? <ActivityIndicator color="#fff" /> : <Text style={styles.buttonText}>Import Backup</Text>}
+                        </TouchableOpacity>
+                    </View>
+                </View>
+
                 {process.env.EXPO_PUBLIC_GEMINI_API_KEY && (
                     <View style={styles.infoBox}>
                         <Ionicons name="information-circle" size={20} color={theme.colors.primary} />
@@ -269,7 +320,7 @@ export default function SettingsScreen() {
                         </Text>
                     </View>
                 )}
-            </View>
+            </ScrollView>
         </SafeAreaView>
     );
 }
@@ -360,6 +411,12 @@ const createStyles = (theme: any) => StyleSheet.create({
     },
     testButton: {
         backgroundColor: theme.colors.success,
+    },
+    exportButton: {
+        backgroundColor: theme.colors.primary,
+    },
+    importButton: {
+        backgroundColor: theme.colors.secondary || '#6c757d', // Fallback if secondary not defined
     },
     buttonText: {
         color: '#fff',

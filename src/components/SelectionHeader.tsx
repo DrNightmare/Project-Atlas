@@ -74,7 +74,7 @@ const createStyles = (theme: any) => StyleSheet.create({
         paddingHorizontal: theme.spacing.l,
         paddingVertical: theme.spacing.m,
         backgroundColor: theme.colors.background,
-        height: 64, // Fixed height to prevent layout jumps
+        minHeight: 64, // Min height to prevent layout jumps but allow expansion
     },
     headerTitle: {
         ...theme.typography.h1,

@@ -1,4 +1,4 @@
-# Project Atlas - TODO List
+# Atlas - TODO List
 
 ## Security & Authentication
 - [x] Add biometric lock support.

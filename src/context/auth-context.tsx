@@ -38,7 +38,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
             }
 
             const result = await LocalAuthentication.authenticateAsync({
-                promptMessage: 'Authenticate to access Project Atlas',
+                promptMessage: 'Authenticate to access Atlas',
                 fallbackLabel: 'Use Passcode',
             });
 

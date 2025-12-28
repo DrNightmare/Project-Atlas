@@ -19,7 +19,7 @@ export const LockScreen = () => {
                 </View>
 
                 <Text style={[styles.title, { color: colors.text }]}>
-                    Project Atlas Locked
+                    Atlas Locked
                 </Text>
 
                 <Text style={[styles.subtitle, { color: colors.textSecondary }]}>
